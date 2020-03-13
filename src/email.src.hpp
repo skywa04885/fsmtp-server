@@ -51,5 +51,7 @@ namespace models
         int parseAddress(const std::string& raw, EmailAddress& target);
         int parseAddressList(const std::string& raw, std::vector<EmailAddress>& target);
         int parseHeaders(const std::string& raw, std::vector<EmailHeader>& target);
+        int handleMimeSection(const std::string& section, Email& target);
+        int parseMime(std::string& raw, Email& target);
     };
 };

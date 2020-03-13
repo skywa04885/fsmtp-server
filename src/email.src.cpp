@@ -10,7 +10,7 @@ namespace models
             // Removes double whitespaces
             bool lww = false;
             // Loops over all the chars
-            for (char& c : target)
+            for (char &c : target)
             {
                 if (c == ' ') {
                     if (!lww) {
@@ -39,7 +39,7 @@ namespace models
             // Parses the name if possible
             if (raw[0] != '<' && raw.find_first_of('<') != std::string::npos)
             {
-                // Gets the section where the name is
+                // Gets the section where the name is                                                                 
                 temp = raw.substr(0, raw.find_first_of('<'));
                 // Normalizes the whitespace
                 normalizeWhitespace(temp);
@@ -113,6 +113,101 @@ namespace models
         int parseHeaders(const std::string& raw, std::vector<EmailHeader>& target)
         {
 
+        }
+
+        // Handles a specific section of a Mime message
+        int handleMimeSection(const std::string& section, Email& target)
+        {
+            std::cout << "Section: " << section << std::endl << std::endl;
+            // Returns that parsing went correct
+            return 0;
+        }
+
+        // Parses an full Mime Message
+        int parseMime(std::string& raw, Email& target)
+        {
+            /*
+             * Splits the document up intro lines
+             */
+
+            // Inserts a 10 char before the end
+            raw.insert(raw.begin(), 10);
+            // The lines
+            std::vector<std::string> lines;
+            // Starts splitting the message into lines
+            std::size_t current, previous = 0;
+            // Gets the first occurrence
+            current = raw.find("\r\n");
+            // Loops over all the occurrences
+            for (;;)
+            {
+                // Checks if should break
+                if (current == std::string::npos) break;
+                // Appends the current string
+                lines.push_back(raw.substr(previous + 1, current - previous - 1));
+                // Sets the previous
+                previous = current + 1;
+                // Gets the next occurrence
+                current = raw.find("\r\n", previous);
+            }
+            // Appends the final string
+            lines.push_back(raw.substr(previous + 1, current - previous - 1));
+
+            /*
+             * Starts binding sections, that belong together
+             */
+
+            // The result
+            std::vector<std::string> result;
+            // The temp
+            std::string temp;
+            // The current line started
+            bool lIsIndented; // If there is indention
+            bool lAbcStarted; // If the normal string is started
+            bool lLastIndented;// If the last string was indented
+            // Loops over all the lines
+            for (auto& line : lines)
+            {
+                // Resets the values
+                lIsIndented = false;
+                lAbcStarted = false;
+                // Loops over the chars
+                for (char& c : line)
+                {
+                    if (!lAbcStarted && (c == ' ' || c == '\t')) lIsIndented = true;
+                    else lAbcStarted = true;
+                }
+                // Checks if it is indented,
+                // if is indented remove the not required white
+                // space
+                // TODO: Fix error, see terminal moron
+                if (lIsIndented)
+                {
+                    // Sets the last to indented
+                    lLastIndented = true;
+                    // Normalizes the string
+                    normalizeWhitespace(line);
+                    // Appends the string to the temp
+                    temp.append(line);
+                } else if (!temp.empty()) {
+                    // Appends line to the result
+                    result.push_back(temp);
+                    // Clears the temp
+                    temp.clear();
+                } else {
+                    // Appends line to the result
+                    result.push_back(line);
+                }
+            }
+
+            // Prints the lines
+            for (auto& line : result)
+            {
+                std::cout << line << std::endl;
+            }
+
+            // Returns
+            return 0;
         }
     };
 };
