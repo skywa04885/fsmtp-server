@@ -54,23 +54,27 @@ namespace serverCommand
             }
         }
 
-        // Parses the arguments
-        int argumentStart = buffer.find_first_of(":");
-        // Checks if there is an argument
-        if (argumentStart != std::string::npos)
+        // Checks if the arguments should be parsed
+        if (commandResult == SMTPServerCommand::HELLO || commandResult == SMTPServerCommand::MAIL_FROM || commandResult == SMTPServerCommand::RCPT_TO)
         {
-            argumentStart++;
-            // Gets the specific part of the buffer,
-            // and removes the \r\n
-            std::string arguments = buffer.substr(argumentStart, buffer.length() - argumentStart - 2);
-            // Sets the result
-            argumentResult = arguments;
-        } else if (commandResult == SMTPServerCommand::HELLO) {
-            // Gets the arguments string,
-            // and removes the \r\n
-            std::string arguments = buffer.substr(5, buffer.length() - 5 - 2);
-            // Sets the result
-            argumentResult = arguments;
+            // Parses the arguments
+            int argumentStart = buffer.find_first_of(":");
+            // Checks if there is an argument
+            if (argumentStart != std::string::npos)
+            {
+                argumentStart++;
+                // Gets the specific part of the buffer,
+                // and removes the \r\n
+                std::string arguments = buffer.substr(argumentStart, buffer.length() - argumentStart - 2);
+                // Sets the result
+                argumentResult = arguments;
+            } else if (commandResult == SMTPServerCommand::HELLO) {
+                // Gets the arguments string,
+                // and removes the \r\n
+                std::string arguments = buffer.substr(5, buffer.length() - 5 - 2);
+                // Sets the result
+                argumentResult = arguments;
+            }
         }
 
         // Returns the command

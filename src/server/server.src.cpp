@@ -69,7 +69,7 @@ namespace server
             }
             // Sets the socket timeout
             struct timeval timeout{};
-            timeout.tv_sec = 10;
+            timeout.tv_sec = 40;
             timeout.tv_usec = 0;
             // Sets the socket timeout option
             if (
@@ -175,6 +175,8 @@ namespace server
         std::string response;
         // The string variant of the buffer
         std::string sBuffer;
+        // The received message body
+        std::string sMessageBuffer;
         // The arguments of the current command
         std::string currentCommandArgs;
         // The current command
@@ -188,6 +190,9 @@ namespace server
         // The read loop
         for (;;)
         {
+            // Clears the buffer
+            memset(buffer, 0, 1024);
+            sBuffer.clear();
             // Reads the data
             readLen = recv(*params.clientSocket, buffer, sizeof(char) * 1024, 0);
             // Checks if there actually is data
@@ -202,6 +207,28 @@ namespace server
             }
             // Assigns the sBuffer an string
             sBuffer = buffer;
+            // Checks if data os currently being handled
+            if (connPhasePt == ConnPhasePT::PHASE_PT_DATA)
+            { // Should handle message body
+                // Appends to the buffer
+                std::ofstream o("../temp.txt", std::ios_base::app);
+                o << sBuffer;
+                o.close();
+                // Checks if it contains the message end
+                if (sBuffer.find("\r\n.\r\n") != std::string::npos)
+                {
+                    // Sets the status
+                    connPhasePt = ConnPhasePT::PHASE_PT_DATA_END;
+                    // Generates the response
+                    response = serverCommand::generate(250, "Ok: message received ;)");
+                    // Sends the response
+                    sendMessage(params.clientSocket, response, print);
+                    // Continues
+                    continue;
+                }
+                // Continues
+                continue;
+            }
             // Parses the current command
             std::tie(currentCommand, currentCommandArgs) = serverCommand::parse(sBuffer);
             // Prints the current command
@@ -240,7 +267,6 @@ namespace server
                     // goes to the end
                     goto end;
                 }
-                // MAIL FROM:Luke Rieff <luke.rieff@gmail.com>
                 // Mail from
                 case serverCommand::SMTPServerCommand::MAIL_FROM: {
                     // Checks if command is allowed
@@ -249,12 +275,13 @@ namespace server
                         if (models::parsers::parseAddress(currentCommandArgs, result.m_TransportFrom) >= 0 && !currentCommandArgs.empty())
                         {
                             // Generates the response
-                            response = serverCommand::generate(250, "OK Proceed");
+                            response = serverCommand::generate(250, "Ok Proceed");
                             // Sends the response
                             sendMessage(params.clientSocket, response, print);
                             // Sets the phase
                             connPhasePt = ConnPhasePT::PHASE_PT_MAIL_FROM;
-                            std::cout << result.m_TransportFrom.e_Name << "," << result.m_TransportFrom.e_Address << std::endl;
+                            // Prints an update
+                            print << "Message source: " << result.m_TransportFrom.e_Name << " <" << result.m_TransportFrom.e_Address << ">" << logger::ConsoleOptions::ENDL;
                             // Breaks
                             break;
                         }
@@ -272,17 +299,45 @@ namespace server
                 case serverCommand::SMTPServerCommand::RCPT_TO: {
                     // Checks if command is allowed
                     if (connPhasePt >= ConnPhasePT::PHASE_PT_MAIL_FROM) {
+                        // Parses the data
+                        if (models::parsers::parseAddress(currentCommandArgs, result.m_TransportTo) >= 0 && !currentCommandArgs.empty())
+                        {
+                            // Generates the response
+                            response = serverCommand::generate(250, "Ok Proceed");
+                            // Sends the response
+                            sendMessage(params.clientSocket, response, print);
+                            // Sets the phase
+                            connPhasePt = ConnPhasePT::PHASE_PT_MAIL_TO;
+                            // Prints an update
+                            print << "Message target: " << result.m_TransportTo.e_Name << " <" << result.m_TransportTo.e_Address << ">" << logger::ConsoleOptions::ENDL;
+                            // Breaks
+                            break;
+                        }
+                        // Sends the syntax error
+                        sendSyntaxError(params.clientSocket, "", print);
+                        goto end;
+                    }
+                    // Sends the message that action is not allowed
+                    sendInvalidOrderError(params.clientSocket, "MAIL FROM", print);
+                    // Breaks
+                    break;
+                }
+                // The data section
+                case serverCommand::SMTPServerCommand::DATA: {
+                    // Checks if the command is allowed
+                    if (connPhasePt >= ConnPhasePT::PHASE_PT_MAIL_TO)
+                    {
                         // Generates the response
-                        response = serverCommand::generate(250, "OK Proceed");
+                        response = serverCommand::generate(354, "");
                         // Sends the response
                         sendMessage(params.clientSocket, response, print);
                         // Sets the phase
-                        connPhasePt = ConnPhasePT::PHASE_PT_MAIL_TO;
+                        connPhasePt = ConnPhasePT::PHASE_PT_DATA;
                         // Breaks
                         break;
                     }
                     // Sends the message that action is not allowed
-                    sendInvalidOrderError(params.clientSocket, "MAIL FROM", print);
+                    sendInvalidOrderError(params.clientSocket, "RCPT TO", print);
                     // Breaks
                     break;
                 }

@@ -6,6 +6,7 @@
 #include <string>
 #include <tuple>
 #include <thread>
+#include <fstream>
 #include <memory.h>
 
 #include "../logger.src.hpp"
