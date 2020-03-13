@@ -10,6 +10,7 @@
 
 #include "../logger.src.hpp"
 #include "commands.src.hpp"
+#include "../email.src.hpp"
 
 namespace server
 {

@@ -5,7 +5,7 @@ namespace serverCommand
     std::tuple<SMTPServerCommand, std::string> parse(const std::string& buffer)
     {
         // The current argument
-        std::string argumentResult("");
+        std::string argumentResult;
         // The current command
         SMTPServerCommand commandResult = SMTPServerCommand::INVALID;
         // The char buffer
@@ -63,26 +63,14 @@ namespace serverCommand
             // Gets the specific part of the buffer,
             // and removes the \r\n
             std::string arguments = buffer.substr(argumentStart, buffer.length() - argumentStart - 2);
-            // Removes whitespace
-            for (char& c : arguments)
-            {
-                if (c != ' ')
-                {
-                    argumentResult += c;
-                }
-            }
+            // Sets the result
+            argumentResult = arguments;
         } else if (commandResult == SMTPServerCommand::HELLO) {
             // Gets the arguments string,
             // and removes the \r\n
             std::string arguments = buffer.substr(5, buffer.length() - 5 - 2);
-            // Removes whitespace
-            for (char& c : arguments)
-            {
-                if (c != ' ')
-                {
-                    argumentResult += c;
-                }
-            }
+            // Sets the result
+            argumentResult = arguments;
         }
 
         // Returns the command

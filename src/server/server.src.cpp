@@ -130,6 +130,16 @@ namespace server
         sendMessage(socket, response, print);
     }
 
+    void sendSyntaxError(const int *socket, const char *param, logger::Console& print)
+    {
+        // Generates the response
+        std::string response = serverCommand::generate(501, "");
+        // Sends the response
+        sendMessage(socket, response, print);
+        // Shutdowns the socket
+        print << "Client made syntax error ! transmission channel closing, breaking." << logger::ConsoleOptions::ENDL;
+    }
+
     void connectionThread(ConnectionThreadParams params)
     {
         /**
@@ -173,6 +183,8 @@ namespace server
         ConnPhasePT connPhasePt = ConnPhasePT::PHASE_PT_INITIAL;
         // The current buffer read length
         int readLen;
+        // The result email
+        models::Email result;
         // The read loop
         for (;;)
         {
@@ -200,7 +212,7 @@ namespace server
                 // Client introduces
                 case serverCommand::SMTPServerCommand::HELLO: {
                     // Checks if action is valid
-                    if (connPhasePt == ConnPhasePT::PHASE_PT_INITIAL)
+                    if (connPhasePt >= ConnPhasePT::PHASE_PT_INITIAL)
                     {
                         // Generates the response
                         std::string temp = std::string(inet_ntoa(params.client->sin_addr)) + " nice to meet you!";
@@ -228,28 +240,38 @@ namespace server
                     // goes to the end
                     goto end;
                 }
+                // MAIL FROM:Luke Rieff <luke.rieff@gmail.com>
                 // Mail from
                 case serverCommand::SMTPServerCommand::MAIL_FROM: {
                     // Checks if command is allowed
-                    if (connPhasePt == ConnPhasePT::PHASE_PT_HELLO) {
-                        // Generates the response
-                        response = serverCommand::generate(250, "OK Proceed");
-                        // Sends the response
-                        sendMessage(params.clientSocket, response, print);
-                        // Sets the phase
-                        connPhasePt = ConnPhasePT::PHASE_PT_MAIL_FROM;
+                    if (connPhasePt >= ConnPhasePT::PHASE_PT_HELLO) {
+                        // Parses the data
+                        if (models::parsers::parseAddress(currentCommandArgs, result.m_TransportFrom) >= 0 && !currentCommandArgs.empty())
+                        {
+                            // Generates the response
+                            response = serverCommand::generate(250, "OK Proceed");
+                            // Sends the response
+                            sendMessage(params.clientSocket, response, print);
+                            // Sets the phase
+                            connPhasePt = ConnPhasePT::PHASE_PT_MAIL_FROM;
+                            std::cout << result.m_TransportFrom.e_Name << "," << result.m_TransportFrom.e_Address << std::endl;
+                            // Breaks
+                            break;
+                        }
+                        // Sends the syntax error
+                        sendSyntaxError(params.clientSocket, "", print);
+                        goto end;
+                    } else {
+                        // Sends the message that action is not allowed
+                        sendInvalidOrderError(params.clientSocket, "HELO", print);
                         // Breaks
                         break;
                     }
-                    // Sends the message that action is not allowed
-                    sendInvalidOrderError(params.clientSocket, "HELO", print);
-                    // Breaks
-                    break;
                 }
                 // RCPT To
                 case serverCommand::SMTPServerCommand::RCPT_TO: {
                     // Checks if command is allowed
-                    if (connPhasePt == ConnPhasePT::PHASE_PT_MAIL_FROM) {
+                    if (connPhasePt >= ConnPhasePT::PHASE_PT_MAIL_FROM) {
                         // Generates the response
                         response = serverCommand::generate(250, "OK Proceed");
                         // Sends the response
@@ -266,13 +288,7 @@ namespace server
                 }
                 // Command not found
                 default: {
-                    // Generates the response
-                    response = serverCommand::generate(501, "");
-                    // Sends the response
-                    sendMessage(params.clientSocket, response, print);
-                    // Shutdowns the socket
-                    print << "Client made syntax error ! transmission channel closing, breaking." << logger::ConsoleOptions::ENDL;
-                    // goes to the end
+                    sendSyntaxError(params.clientSocket, "", print);
                     goto end;
                 }
             }

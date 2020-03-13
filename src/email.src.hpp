@@ -31,8 +31,8 @@ namespace models
     {
     public:
         // The quick access variables
-        std::string m_TransportTo;
-        std::string m_TransportFrom;
+        EmailAddress m_TransportTo;
+        EmailAddress m_TransportFrom;
         std::string m_Subject;
         // The dates
         uint64_t m_Timestamp;
