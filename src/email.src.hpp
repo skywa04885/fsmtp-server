@@ -104,7 +104,8 @@ inline std::ostream &operator << (std::ostream &out, models::Email const &data)
     out << " - \033[34m[Subject]\033[0m: \033[33m" << data.m_Subject << "\033[0m" << std::endl;
     out << " - \033[34m[Message ID\033[0m: \033[33m" << data.m_MessageID << "\033[0m" << std::endl;
     out << " - \033[34m[Message Date]\033[0m: \033[33m" << data.m_Date << "\033[0m" << std::endl;
-    
+    out << " - \033[34m[Boundary]\033[0m: \033[33m" << data.m_Boundary << "\033[0m" << std::endl;
+
     // Appends the mail to
     out << " - \033[34m[Mail To]\033[0m: " << std::endl;
     // Loops over the addresses

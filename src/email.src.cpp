@@ -118,6 +118,10 @@ namespace models
              * Splits the document up intro lines
              */
 
+            // Removes the \r from the document,
+            // so we can parse using '\n'
+            raw.erase(std::remove(raw.begin(), raw.end(), '\r'), raw.end());
+
             // The lines
             std::vector<std::string> lines;
             // Starts splitting the message into lines
@@ -130,14 +134,14 @@ namespace models
                 // Checks if should break
                 if (current == std::string::npos) break;
                 // Appends the current string
-                lines.push_back(raw.substr(previous, current - previous - 1));
+                lines.push_back(raw.substr(previous, current - previous));
                 // Sets the previous
                 previous = current + 1;
                 // Gets the next occurrence
                 current = raw.find('\n', previous);
             }
             // Appends the final string
-            lines.push_back(raw.substr(previous, current - previous - 1));
+            lines.push_back(raw.substr(previous, current - previous));
 
             /*
              * Starts binding sections, that belong together
@@ -245,7 +249,7 @@ namespace models
                     tempHeaders.push_back(line);
                 } else { // Headers ended
                     // Removes the empty lines
-                    if (line.empty()) continue;
+                    // if (line.empty()) continue;
                     // Appends the content to the content vector
                     tempBody.push_back(line);
                 }
@@ -321,7 +325,8 @@ namespace models
                                 {
                                     target.m_ContentType = EmailContentType::EMAIL_CT_TEXT_HTML;
                                 }
-                            } else { // Is none of the existing, check if it is a key value type
+                            } else
+                            { // Is none of the existing, check if it is a key value type
                                 // Parses the sub argument
                                 std::string key;
                                 std::string value;
@@ -332,7 +337,13 @@ namespace models
                                 { // Begins with b
                                     if (key.compare("boundary") == 0)
                                     { // Is the boundary
-                                        
+                                        target.m_Boundary.append(value.substr(1, value.length() - 2));
+                                    }
+                                } else if (key[0] == 'c')
+                                { // Begins with c
+                                    if (key.compare("charset") == 0)
+                                    { // Is charset
+
                                     }
                                 }
                             }
@@ -356,7 +367,59 @@ namespace models
             // Starts parsing the body, based on the specified type
             if (target.m_ContentType == EmailContentType::EMAIL_CT_MULTIPART_ALTERNATIVE)
             { // Multiple content sections
-                
+                /*
+                 * 1. Split up into multiple sections inside vector, with
+                 * -Content type and other stuff.
+                 */
+
+                // The comparable variables
+                std::string sectionBoundaryComparable;
+                std::string sectionEndBoundaryComparable;
+                sectionBoundaryComparable.append("--");
+                sectionBoundaryComparable.append(target.m_Boundary);
+                sectionEndBoundaryComparable.append("--");
+                sectionEndBoundaryComparable.append(target.m_Boundary);
+                sectionEndBoundaryComparable.append("--");
+
+                // The result vector
+                std::vector<EmailContentSection> content;
+
+                // The current from, and to
+                std::size_t sectionFrom = 0;
+                std::size_t sectionTo = 0;
+
+                // Loops over the lines
+                for (auto &line : tempBody)
+                {
+                    // Checks if it should be considered as boundary
+                    if (line[0] == '-')
+                    {
+                        // If it is document end
+                        bool isDocEnd = line.compare(sectionEndBoundaryComparable) == 0;
+
+                        // Checks if an boundary is hit
+                        if  (line.compare(sectionBoundaryComparable) == 0 || isDocEnd)
+                        {
+                            // Loops over the lines in current section
+                            for (std::size_t i = sectionFrom; i < sectionTo; i++)
+                            {
+                                std::cout << tempBody.at(i) << std::endl;
+                            }
+
+                            sectionFrom = sectionTo;
+                        }
+
+                        // Checks if it should break
+                        if (isDocEnd)
+                        {
+                            // Breaks from the section
+                            break;
+                        }
+                    }
+
+                    // Increments the section to
+                    sectionTo++;
+                }
             } else if (target.m_ContentType == EmailContentType::EMAIL_CT_TEXT_PLAIN)
             { // Content type plain text / markup language
                 
