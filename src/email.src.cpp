@@ -400,12 +400,30 @@ namespace models
                         // Checks if an boundary is hit
                         if  (line.compare(sectionBoundaryComparable) == 0 || isDocEnd)
                         {
+                            // If the headers ended
+                            bool headersEnded = false;
+
                             // Loops over the lines in current section
                             for (std::size_t i = sectionFrom; i < sectionTo; i++)
                             {
-                                std::cout << tempBody.at(i) << std::endl;
+                                // Checks if the headers ended
+                                if (!headersEnded)
+                                {
+                                    // Checks if current line is empty
+                                    if (tempBody.at(i).empty())
+                                    {
+                                        // Parses the headers
+
+                                        // Sets the header end to true
+                                        // - no header anymore
+                                        headersEnded = true;
+                                    }
+                                }
                             }
 
+                            // Set the old section from
+                            // to the curren to, so we
+                            // can continue where we left
                             sectionFrom = sectionTo;
                         }
 
