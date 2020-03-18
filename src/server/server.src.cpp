@@ -175,6 +175,7 @@ namespace server
         std::string response;
         // The string variant of the buffer
         std::string sBuffer;
+        std::string dataBuffer;
         // The received message body
         std::string sMessageBuffer;
         // The arguments of the current command
@@ -210,10 +211,7 @@ namespace server
             // Checks if data os currently being handled
             if (connPhasePt == ConnPhasePT::PHASE_PT_DATA)
             { // Should handle message body
-                // Appends to the buffer
-                std::ofstream o("../temp.txt", std::ios_base::app);
-                o << sBuffer;
-                o.close();
+                dataBuffer.append(sBuffer);
                 // Checks if it contains the message end
                 if (sBuffer.find("\r\n.\r\n") != std::string::npos)
                 {
@@ -223,6 +221,10 @@ namespace server
                     response = serverCommand::generate(250, "Ok: message received ;)");
                     // Sends the response
                     sendMessage(params.clientSocket, response, print);
+                    // Parses the message
+                    models::Email email;
+                    models::parsers::parseMime(dataBuffer, email);
+                    std::cout << email << std::endl;
                     // Continues
                     continue;
                 }

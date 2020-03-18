@@ -327,6 +327,7 @@ namespace models
                                 }
                             } else
                             { // Is none of the existing, check if it is a key value type
+
                                 // Parses the sub argument
                                 std::string key;
                                 std::string value;
@@ -375,61 +376,138 @@ namespace models
                 // The comparable variables
                 std::string sectionBoundaryComparable;
                 std::string sectionEndBoundaryComparable;
+
+                // Appends on the section boundary
                 sectionBoundaryComparable.append("--");
                 sectionBoundaryComparable.append(target.m_Boundary);
+
+                // Appends on the final boundary
                 sectionEndBoundaryComparable.append("--");
                 sectionEndBoundaryComparable.append(target.m_Boundary);
                 sectionEndBoundaryComparable.append("--");
-
-                // The result vector
-                std::vector<EmailContentSection> content;
 
                 // The current from, and to
                 std::size_t sectionFrom = 0;
                 std::size_t sectionTo = 0;
 
+                // The section counter
+                int currentSectionIndex = 0;
+
                 // Loops over the lines
                 for (auto &line : tempBody)
                 {
-                    // Checks if it should be considered as boundary
+                    // Checks if it should be consideredk as boundary
+                    // if it is an boundary, start an new section
                     if (line[0] == '-')
                     {
-                        // If it is document end
+                        // If it is document end,
+                        // so we later can check if it is the end of document
+                        // and break
                         bool isDocEnd = line.compare(sectionEndBoundaryComparable) == 0;
 
-                        // Checks if an boundary is hit
+                        // Checks if an boundary is hit,
+                        // either the new section boundary,
+                        // or the end boundary
                         if  (line.compare(sectionBoundaryComparable) == 0 || isDocEnd)
-                        {
-                            // If the headers ended
-                            bool headersEnded = false;
+                        { // Boundary is hit
 
-                            // Loops over the lines in current section
-                            for (std::size_t i = sectionFrom; i < sectionTo; i++)
-                            {
-                                // Checks if the headers ended
-                                if (!headersEnded)
+                            // Checks if it is the first section, or another one
+                            if (sectionTo == 0)
+                            { // Just ignore, and go to the next round
+                                PRINT_MIME_PARSER_DEBUG("Parser detected first section.");
+                            } else
+                            { // Not first section, parse headers and append
+
+                                PRINT_MIME_PARSER_DEBUG("Parser detected new section.");
+
+                                // The section processing variables
+                                bool headersEnded = false;
+                                EmailContentSection section;
+
+                                /*
+                                 * Processes the current section
+                                 */
+
+                                // Loops over the lines inside the 
+                                // sectionFrom and sectionTo
+                                for (std::size_t i = sectionFrom; i < sectionTo; i++)
                                 {
-                                    // Checks if current line is empty
-                                    if (tempBody.at(i).empty())
+                                    // Checks if the current line is empty
+                                    if (!headersEnded && tempBody.at(i).empty())
                                     {
-                                        // Parses the headers
-
-                                        // Sets the header end to true
-                                        // - no header anymore
+                                        // Sets headers ended to true
                                         headersEnded = true;
+                                        // Continues
+                                        continue; 
+                                    }
+
+                                    // Checks if the headers ended
+                                    if (headersEnded)
+                                    { // Headers ended
+                                        // Appends the current data to the section
+                                        section.e_Content.append(tempBody.at(i));
+                                    } else 
+                                    { // Headers not ended
+                                        // Checks if field is in begin
+                                        // if so continue
+                                        if (sectionFrom == i) continue;
+                                        // Prints the parsed field
+                                        PRINT_MIME_PARSER_DEBUG(std::string("Parsing header field:") + tempBody.at(i));
+                                        // Parses the current header
+                                        if (parseHeader(tempBody.at(i), section.e_FullHeaders) < 0) return -1;
                                     }
                                 }
-                            }
 
-                            // Set the old section from
-                            // to the curren to, so we
-                            // can continue where we left
-                            sectionFrom = sectionTo;
+                                // Sets the current section index
+                                // to the current section
+                                section.e_Index = currentSectionIndex;
+
+                                // Starts checking the headers for usefull information
+                                for (auto &header : section.e_FullHeaders)
+                                {
+                                    if (header.e_Key[0] == 'C')
+                                    { // Key starts with c
+                                        if (header.e_Key.compare("Content-Type") == 0)
+                                        { // Header key is content type
+
+                                            // Parses the arguments to an vector
+                                            std::vector<std::string> arguments;
+                                            if(parseHeaderArguments(header.e_Value, arguments) < 0) return -1;
+
+                                            // Loops over the arguments, and checks what to do with it
+                                            for (auto &argument : arguments)
+                                            {
+                                                if (argument[0] == 't')
+                                                { // Argument starts with t
+                                                    if (argument.substr(0, 10).compare("text/plain") == 0)
+                                                    { // Argument is text/plain
+                                                        section.e_Type = EmailContentSectionType::EMAIL_CS_TEXT_PLAIN;
+                                                    } else if (argument.substr(0, 9).compare("text/html") == 0)
+                                                    { // Argument is text/html
+                                                        section.e_Type = EmailContentSectionType::EMAIL_CS_HTML;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Appends the current section to the result
+                                target.m_Content.push_back(section);
+
+                                // Increments the section index
+                                currentSectionIndex++;
+
+                                // Sets the section from and to,
+                                // so we can go to the next section
+                                sectionFrom = sectionTo;
+                            }
                         }
 
                         // Checks if it should break
                         if (isDocEnd)
                         {
+                            PRINT_MIME_PARSER_DEBUG("Parser has hit final boundary, breaking.");
                             // Breaks from the section
                             break;
                         }

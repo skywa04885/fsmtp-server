@@ -4,6 +4,14 @@
 #include <iostream>
 #include <string>
 
+#define EMAIL_PARSE_DEBUG
+
+#ifdef EMAIL_PARSE_DEBUG
+#define PRINT_MIME_PARSER_DEBUG(a) std::cout << "Debug: \033[32m[MIME Parser 1.0]\033[0m: " << a << std::endl
+#else
+#define PRINT_MIME_PARSER_DEBUG(a)
+#endif
+
 namespace models
 {
     typedef enum {
@@ -18,15 +26,16 @@ namespace models
     } EmailContentSectionType;
 
     typedef struct {
-        std::string e_Content;
-        EmailContentSectionType e_Type;
-        int e_Index;
-    } EmailContentSection;
-
-    typedef struct {
         std::string e_Key;
         std::string e_Value;
     } EmailHeader;
+
+    typedef struct {
+        std::string e_Content;
+        EmailContentSectionType e_Type;
+        std::vector<EmailHeader> e_FullHeaders;
+        int e_Index;
+    } EmailContentSection;
 
     typedef struct {
         std::string e_Name;
@@ -85,10 +94,34 @@ inline std::ostream &operator << (std::ostream &out, models::EmailContentType co
     return out;
 }
 
+// Overloads the email section type enum
+inline std::ostream &operator << (std::ostream &out, models::EmailContentSectionType const &data)
+{
+    switch (data)
+    {
+        case models::EmailContentSectionType::EMAIL_CS_HTML: {
+            out << "HTML ( Hyper Text Markup Language )";
+            break;
+        }
+        case models::EmailContentSectionType::EMAIL_CS_TEXT_PLAIN: {
+            out << "Plain Text";
+            break;
+        }
+    }
+    return out;
+}
+
 // Overloads the EmailAddress struct
 inline std::ostream &operator << (std::ostream &out, models::EmailAddress const &data)
 {
     out << (data.e_Name.empty() ? "Unknown" : data.e_Name) << " <" << data.e_Address << ">";
+    return out;
+}
+
+// Overloads the EmailAddress struct
+inline std::ostream &operator << (std::ostream &out, models::EmailHeader const &data)
+{
+    out << data.e_Key << ": " << data.e_Value;
     return out;
 }
 
@@ -129,6 +162,43 @@ inline std::ostream &operator << (std::ostream &out, models::Email const &data)
         // Increments i
         i++;
     }
-    
+
+    // Appends the content
+    out << " - \033[34m[Content]\033[0m: " << std::endl;
+    // Loops over the addresses
+    i = 1;
+    for (auto &section : data.m_Content)
+    {
+        // Appends to the stream
+        out << '\t' << i << ". \033[34m[Content Section]\033[0m:" << std::endl;
+        out << '\t' << "  - \033[34m[Section Type]\033[0m: \033[33m" << section.e_Type << "\033[0m" << std::endl;
+        out << '\t' << "  - \033[34m[Section Index]\033[0m: \033[33m" << section.e_Index << "\033[0m" << std::endl;
+        out << '\t' << "  - \033[34m[Section Value]\033[0m: \033[33m" << section.e_Content << "\033[0m" << std::endl;
+        out << '\t' << "  - \033[34m[Section Headers]\033[0m: \033[0m" << std::endl;
+        // Loops over the headers
+        std::size_t j = 0;
+        for (auto& header : section.e_FullHeaders)
+        {
+            // Prints the current header
+            std::cout << "\t\t " << j << ". \033[33m" << header << "\033[0m" << std::endl;
+            // Increments J
+            j++;
+        }
+        // Increments i
+        i++;
+    }
+
+    // Appends the content
+    out << " - \033[34m[Headers]\033[0m: " << std::endl;
+    // Loops over the headers
+    std::size_t j = 0;
+    for (auto& header : data.m_FullHeaders)
+    {
+        // Prints the current header
+        std::cout << "\t " << j << ". \033[33m" << header << "\033[0m" << std::endl;
+         // Increments J
+        j++;
+    }
+
     return out;
 }
