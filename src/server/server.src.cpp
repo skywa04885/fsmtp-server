@@ -1,3 +1,10 @@
+/*
+ * Project: <SMTP> FSMTP Server by Luke Rieff
+ * Author: Luke Rieff
+ * Github: https://github.com/skywa04885/fsmtp-server
+ * Copyright: Free to use, without modifying
+ */
+
 #include "server.src.hpp"
 
 namespace server
@@ -10,6 +17,7 @@ namespace server
 
         // Creates the logger
         logger::Console print(logger::Level::LOGGER_INFO, "Run@Server");
+        print << "Made by Luke Rieff ;)" << logger::ConsoleOptions::ENDL;
         // Creates the server struct
         struct sockaddr_in server{};
         server.sin_addr.s_addr = INADDR_ANY;
@@ -223,7 +231,7 @@ namespace server
                     sendMessage(params.clientSocket, response, print);
                     // Parses the message
                     models::Email email;
-                    models::parsers::parseMime(dataBuffer, email);
+                    parsers::parseMime(dataBuffer, email);
                     std::cout << email << std::endl;
                     // Continues
                     continue;
@@ -274,7 +282,7 @@ namespace server
                     // Checks if command is allowed
                     if (connPhasePt >= ConnPhasePT::PHASE_PT_HELLO) {
                         // Parses the data
-                        if (models::parsers::parseAddress(currentCommandArgs, result.m_TransportFrom) >= 0 && !currentCommandArgs.empty())
+                        if (parsers::parseAddress(currentCommandArgs, result.m_TransportFrom) >= 0 && !currentCommandArgs.empty())
                         {
                             // Generates the response
                             response = serverCommand::generate(250, "Ok Proceed");
@@ -302,7 +310,7 @@ namespace server
                     // Checks if command is allowed
                     if (connPhasePt >= ConnPhasePT::PHASE_PT_MAIL_FROM) {
                         // Parses the data
-                        if (models::parsers::parseAddress(currentCommandArgs, result.m_TransportTo) >= 0 && !currentCommandArgs.empty())
+                        if (parsers::parseAddress(currentCommandArgs, result.m_TransportTo) >= 0 && !currentCommandArgs.empty())
                         {
                             // Generates the response
                             response = serverCommand::generate(250, "Ok Proceed");

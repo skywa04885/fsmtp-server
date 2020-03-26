@@ -1,3 +1,10 @@
+/*
+ * Project: <SMTP> FSMTP Server by Luke Rieff
+ * Author: Luke Rieff
+ * Github: https://github.com/skywa04885/fsmtp-server
+ * Copyright: Free to use, without modifying
+ */
+
 #pragma once
 
 #include <vector>
@@ -61,19 +68,8 @@ namespace models
         std::vector<EmailAddress> m_To;
         std::vector<EmailHeader> m_FullHeaders;
         std::vector<EmailContentSection> m_Content;
-    };
-    
-    // Raw text parsers, for an email instance
-    namespace parsers
-    {
-        void normalizeWhitespace(std::string& target);
-
-        int parseAddress(const std::string& raw, EmailAddress& target);
-        int parseAddressList(const std::string& raw, std::vector<EmailAddress>& target);
-        int parseMime(std::string& raw, Email& target);
-        int parseHeader(std::string &raw, std::vector<EmailHeader>& headers);
-        int parseHeaderArguments(std::string& raw, std::vector<std::string>& target);
-        int parseHeaderArgumentsValue(std::string &raw, std::string &key, std::string &value);
+        // Methods
+        int save();
     };
 };
 

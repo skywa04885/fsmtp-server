@@ -24,6 +24,8 @@ add_library(
         src/server/commands.src.cpp
         src/server/server.src.hpp
         src/server/server.src.cpp
+        src/parsers/mail-parser.src.cpp
+        src/parsers/mail-parser.src.hpp
 )
 
 add_executable(fsmtp_server main.cpp)

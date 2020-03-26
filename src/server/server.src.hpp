@@ -1,3 +1,10 @@
+/*
+ * Project: <SMTP> FSMTP Server by Luke Rieff
+ * Author: Luke Rieff
+ * Github: https://github.com/skywa04885/fsmtp-server
+ * Copyright: Free to use, without modifying
+ */
+
 #pragma once
 
 #include <sys/socket.h>
@@ -12,6 +19,7 @@
 #include "../logger.src.hpp"
 #include "commands.src.hpp"
 #include "../email.src.hpp"
+#include "../parsers/mail-parser.src.hpp"
 
 namespace server
 {
