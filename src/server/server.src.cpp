@@ -77,7 +77,7 @@ namespace server
             }
             // Sets the socket timeout
             struct timeval timeout{};
-            timeout.tv_sec = 40;
+            timeout.tv_sec = 9;
             timeout.tv_usec = 0;
             // Sets the socket timeout option
             if (
@@ -162,6 +162,23 @@ namespace server
         logger::Console print(logger::Level::LOGGER_INFO, printPrefix.c_str());
         // Prints that the thread has been created
         print << "Thread assigned successfully." << logger::ConsoleOptions::ENDL;
+
+        /**
+         * Creates cassandra connection
+         */
+
+        bool connectionSuccess;
+        cassandra::Connection connection("62.171.132.204", connectionSuccess, print);
+        if (!connectionSuccess)
+        {
+            // Prints error message
+            print.setLevel(logger::Level::LOGGER_FATAL);
+            print << "Could not connect to cassandra, may not work properly." << logger::ConsoleOptions::ENDL;
+            print.setLevel(logger::Level::LOGGER_INFO);
+        } else
+        {
+            print << "Thread successfully connected to cassandra." << logger::ConsoleOptions::ENDL;
+        }
 
         /**
          * The initial command line
@@ -312,6 +329,17 @@ namespace server
                         // Parses the data
                         if (parsers::parseAddress(currentCommandArgs, result.m_TransportTo) >= 0 && !currentCommandArgs.empty())
                         {
+                            // Checks if the address is on the server
+                            std::string domain = result.m_TransportTo.e_Address.substr(0, result.m_TransportTo.e_Address.find_first_of("@"));
+                            std::string username = result.m_TransportTo.e_Address.substr(result.m_TransportTo.e_Address.find_first_of("@"), result.m_TransportTo.e_Address.length() - result.m_TransportTo.e_Address.find_first_of("@"));
+                            // Search the database
+                            models::UserQuickAccess userQuickAccess;
+                            int e = models::UserQuickAccess::selectByDomainAndUsername(connection.c_Session, domain, username, userQuickAccess);
+                            if (e < 0)
+                            {
+                                std::cout << "Cannot fetch user:" << e << std::endl;
+                            }
+
                             // Generates the response
                             response = serverCommand::generate(250, "Ok Proceed");
                             // Sends the response

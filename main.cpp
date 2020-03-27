@@ -5,7 +5,8 @@
 #include "src/email.src.hpp"
 
 int main() {
+    //Runs the server
    server::run(25);
-    
-    return 0;
+   // Closes with code 0
+   return 0;
 }

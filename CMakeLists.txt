@@ -8,6 +8,16 @@ add_library(
 
         src/email.src.hpp
         src/email.src.cpp
+
+        src/user.src.hpp
+        src/user.src.cpp
+)
+
+add_library(
+        db STATIC
+
+        src/db/cassandra.src.hpp
+        src/db/cassandra.src.cpp
 )
 
 add_library(
@@ -29,4 +39,4 @@ add_library(
 )
 
 add_executable(fsmtp_server main.cpp)
-target_link_libraries(fsmtp_server server logger models -lpthread)
+target_link_libraries(fsmtp_server server db logger models -lpthread -lcassandra)

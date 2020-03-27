@@ -20,4 +20,8 @@ namespace logger {
     void Console::setLevel(const Level &c_Level) {
         this->c_Level = c_Level;
     }
+
+    Level Console::getLevel() {
+        return this->c_Level;
+    }
 };

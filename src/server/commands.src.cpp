@@ -155,6 +155,11 @@ namespace serverCommand
                 result << "Bad sequence, send " << param << " first";
                 break;
             }
+            // Mail server error
+            case 471: {
+                result << "Mail server error, " << param;
+                break;
+            }
             // Programmer messed up
             default: {
                 result << "Server does not recognize current code";

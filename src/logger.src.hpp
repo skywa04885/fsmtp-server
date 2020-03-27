@@ -37,6 +37,7 @@ namespace logger
         ~Console();
 
         void setLevel(const Level& c_Level);
+        Level getLevel();
 
         Console& operator << (std::string in)
         {
