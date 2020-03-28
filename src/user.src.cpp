@@ -56,17 +56,16 @@ namespace models
 
     }
 
-    int UserQuickAccess::selectByDomainAndUsername(CassSession *session, const std::string &domain,
-                                                   const std::string &username, UserQuickAccess &target) {
+    int UserQuickAccess::selectByDomainAndUsername(CassSession *session, const char *domain, const char *username, UserQuickAccess& target) {
         // Creates the query
-        const char *query = "select u_uuid, u_bucket, u_password from fmail.users_quick_access where u_domain = ? and u_username = ?";
+        const char *query = "SELECT u_uuid, u_bucket, u_password FROM users_quick_access WHERE u_domain = ? AND u_username = ?";
 
         // Creates the statement
         CassStatement *statement = cass_statement_new(query, 2);
 
         // Prepares the values
-        cass_statement_bind_string(statement, 0, domain.c_str());
-        cass_statement_bind_string(statement, 1, username.c_str());
+        cass_statement_bind_string(statement, 0, domain);
+        cass_statement_bind_string(statement, 1, username);
 
         // Executes the query
         CassFuture *query_future = cass_session_execute(session, statement);
@@ -77,20 +76,23 @@ namespace models
         // Checks if there was an error
         if (cass_future_error_code(query_future) != CASS_OK)
         {
-            logger::Console print(logger::LOGGER_ERROR, "test");
+            logger::Console print(logger::Level::LOGGER_ERROR, "test");
             cassandra::cassLoggerErrorHandler(query_future, print);
             return -1;
         }
 
         // Gets the results
         const CassResult *result = cass_future_get_result(query_future);
-        const CassRow *row = cass_result_first_row(result);
+        CassIterator *iterator = cass_iterator_from_result(result);
 
         // Checks if the row is empty
-        if (row == nullptr)
+        if (!cass_iterator_next(iterator))
         {
             return -2;
         }
+
+        // Gets the row
+        const CassRow *row = cass_iterator_get_row(iterator);
 
         // The result variables
         size_t res_len;

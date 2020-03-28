@@ -25,6 +25,9 @@ insert into users (
     400
 );
 
+insert into users_quick_access (
+
+)
 
 -- Gets the users
 select * from users;

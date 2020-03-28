@@ -1,8 +1,11 @@
 #include <iostream>
 #include <fstream>
 
+#include <cassandra.h>
+
 #include "src/server/server.src.hpp"
 #include "src/email.src.hpp"
+#include "src/logger.src.hpp"
 
 int main() {
     //Runs the server

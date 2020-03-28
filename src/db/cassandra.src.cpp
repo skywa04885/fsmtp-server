@@ -35,17 +35,27 @@ namespace cassandra
         cass_cluster_set_contact_points(this->c_Cluster, this->c_Hosts);
 
         // Connects cassandra
-        this->c_ConnectFuture = cass_session_connect(this->c_Session, this->c_Cluster);
+        this->c_ConnectFuture = cass_session_connect_keyspace(this->c_Session, this->c_Cluster, "fmail");
 
         // Waits for connect
         cass_future_wait(this->c_ConnectFuture);
 
-        // Checks for an error
-        success = true;
+        // Checks if connected successfully
+        if (cass_future_error_code(this->c_ConnectFuture) == CASS_OK)
+        {
+            success = true;
+        } else
+        {
+            cassLoggerErrorHandler(this->c_ConnectFuture, print);
+            success = false;
+        }
     }
 
     Connection::~Connection()
     {
+        // Closes the session
+        cass_session_close(this->c_Session);
+
         // Frees the memory
         cass_future_free(this->c_ConnectFuture);
         cass_cluster_free(this->c_Cluster);

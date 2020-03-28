@@ -60,12 +60,12 @@ namespace models
 
         ~UserQuickAccess();
 
-        static int selectByDomainAndUsername(CassSession *session, const std::string &domain, const std::string &username, UserQuickAccess& target);
-
         std::string u_Domain;
         std::string u_Username;
         CassUuid u_Uuid;
         cass_int64_t u_Bucket;
         std::string u_Password;
+
+        static int selectByDomainAndUsername(CassSession *session, const char *domain, const char *username, UserQuickAccess &target);
     };
 };

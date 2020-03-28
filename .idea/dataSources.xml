@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="Apache Cassandra - @62.171.132.204" uuid="71a34d55-7a21-486b-bfc8-dd087a9d5cb0">
+    <data-source source="LOCAL" name="@192.168.132.133" uuid="b9da5367-4014-4313-9894-2b38570482b8">
       <driver-ref>cassandra</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>com.dbschema.CassandraJdbcDriver</jdbc-driver>
-      <jdbc-url>jdbc:cassandra://62.171.132.204:9042</jdbc-url>
+      <jdbc-url>jdbc:cassandra://192.168.132.133:9042</jdbc-url>
     </data-source>
   </component>
 </project>

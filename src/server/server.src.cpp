@@ -168,7 +168,7 @@ namespace server
          */
 
         bool connectionSuccess;
-        cassandra::Connection connection("62.171.132.204", connectionSuccess, print);
+        cassandra::Connection connection("192.168.132.133", connectionSuccess, print);
         if (!connectionSuccess)
         {
             // Prints error message
@@ -329,15 +329,29 @@ namespace server
                         // Parses the data
                         if (parsers::parseAddress(currentCommandArgs, result.m_TransportTo) >= 0 && !currentCommandArgs.empty())
                         {
-                            // Checks if the address is on the server
-                            std::string domain = result.m_TransportTo.e_Address.substr(0, result.m_TransportTo.e_Address.find_first_of("@"));
-                            std::string username = result.m_TransportTo.e_Address.substr(result.m_TransportTo.e_Address.find_first_of("@"), result.m_TransportTo.e_Address.length() - result.m_TransportTo.e_Address.find_first_of("@"));
-                            // Search the database
+                            // Parses the username and domain name from email
+                            std::string username = result.m_TransportTo.e_Address.substr(0, result.m_TransportTo.e_Address.find_first_of("@"));
+                            std::string domain = result.m_TransportTo.e_Address.substr(result.m_TransportTo.e_Address.find_first_of("@") + 1, result.m_TransportTo.e_Address.length() - result.m_TransportTo.e_Address.find_first_of("@") - 1);
+
+                            // Checks if the user is there
                             models::UserQuickAccess userQuickAccess;
-                            int e = models::UserQuickAccess::selectByDomainAndUsername(connection.c_Session, domain, username, userQuickAccess);
-                            if (e < 0)
+                            int e = models::UserQuickAccess::selectByDomainAndUsername(connection.c_Session, domain.c_str(), username.c_str(), userQuickAccess);
+                            if (e == -1)
                             {
-                                std::cout << "Cannot fetch user:" << e << std::endl;
+                                // Generates the response
+                                response = serverCommand::generate(471, "Something went wrong with Apache Cassandra");
+                                // Sends the response
+                                sendMessage(params.clientSocket, response, print);
+                                // Ends
+                                goto end;
+                            } else if (e == -2)
+                            {
+                                // Generates the response
+                                response = serverCommand::generate(551, "");
+                                // Sends the response
+                                sendMessage(params.clientSocket, response, print);
+                                // Ends
+                                goto end;
                             }
 
                             // Generates the response

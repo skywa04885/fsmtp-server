@@ -160,6 +160,11 @@ namespace serverCommand
                 result << "Mail server error, " << param;
                 break;
             }
+            // User not found
+            case 551: {
+                result << "User not local";
+                break;
+            }
             // Programmer messed up
             default: {
                 result << "Server does not recognize current code";
