@@ -15,6 +15,7 @@
 #include <thread>
 #include <fstream>
 #include <memory.h>
+#include <atomic>
 
 #include "../db/cassandra.src.hpp";
 #include "../logger.src.hpp"
@@ -22,6 +23,8 @@
 #include "../email.src.hpp"
 #include "../parsers/mail-parser.src.hpp"
 #include "../user.src.hpp"
+
+#define MAX_THREADS 6
 
 namespace server
 {

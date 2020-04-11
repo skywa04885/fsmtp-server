@@ -9,6 +9,9 @@
 
 namespace server
 {
+    std::atomic<int> _usedThreads(0);
+    int _maxThreads = MAX_THREADS;
+
     int run(const unsigned int& port)
     {
         /*
@@ -61,8 +64,15 @@ namespace server
         // the clients
         for (;;)
         {
+            // Checks if there are threads ready for assignment
+            if (_usedThreads > _maxThreads){
+                std::this_thread::sleep_for(std::chrono::milliseconds(40));
+                continue;
+            }
+
             // Accepts the client
             clientSocket = accept(serverSock, (struct sockaddr *)&client, (socklen_t *)&sockaddrSize);
+
             // Checks if the client was successfully accepted
             if (clientSocket < 0)
             {
@@ -75,10 +85,12 @@ namespace server
                 // Continues
                 continue;
             }
+
             // Sets the socket timeout
             struct timeval timeout{};
             timeout.tv_sec = 9;
             timeout.tv_usec = 0;
+
             // Sets the socket timeout option
             if (
                     setsockopt(clientSocket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0 ||
@@ -96,6 +108,7 @@ namespace server
                 shutdown(clientSocket, SHUT_RDWR);
                 continue;
             }
+
             // Assigns thread to client
             print << "Client " << inet_ntoa(client.sin_addr) << " initialized connection, assigning thread .." <<
                 logger::ConsoleOptions::ENDL;
@@ -110,6 +123,7 @@ namespace server
                 clientSocketP,
                 clientP
             };
+
             // Creates the thread
             std::thread thread(connectionThread, params);
             thread.detach();
@@ -153,6 +167,9 @@ namespace server
 
     void connectionThread(ConnectionThreadParams params)
     {
+        // Claims one thread
+        _usedThreads++;
+
         /**
          * Thread introduction
          */
@@ -436,5 +453,8 @@ namespace server
             print.setLevel(logger::Level::LOGGER_WARNING);
             // Prints that the client disconnected
             print << "Server closed transmission channel, client disconnected." << logger::ConsoleOptions::ENDL;
+
+            // Makes thread available
+            _usedThreads--;
     }
 };
