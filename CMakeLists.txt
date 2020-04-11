@@ -36,7 +36,8 @@ add_library(
         src/server/server.src.cpp
         src/parsers/mail-parser.src.cpp
         src/parsers/mail-parser.src.hpp
+        src/pre.hpp
 )
 
 add_executable(fsmtp_server main.cpp)
-target_link_libraries(fsmtp_server server db logger models -lpthread -lcassandra)
+target_link_libraries(fsmtp_server server db logger models -lpthread -lcassandra -lssl -lcrypto)

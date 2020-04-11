@@ -14,6 +14,15 @@
 #include <cstring>
 
 #include "../email.src.hpp"
+#include "../pre.hpp"
+
+//#define MP_DEBUG
+
+#ifdef DEBUG
+#define PRINT_MIME_PARSER_DEBUG(a) std::cout << "Debug: \033[32m[MIME Parser 1.0]\033[0m: " << a << std::endl
+#else
+#define PRINT_MIME_PARSER_DEBUG(a)
+#endif
 
 /*
  * Namespace index:

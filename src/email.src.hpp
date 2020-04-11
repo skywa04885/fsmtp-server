@@ -15,14 +15,6 @@
 
 #include <cassandra.h>
 
-#define EMAIL_PARSE_DEBUG
-
-#ifdef EMAIL_PARSE_DEBUG
-#define PRINT_MIME_PARSER_DEBUG(a) std::cout << "Debug: \033[32m[MIME Parser 1.0]\033[0m: " << a << std::endl
-#else
-#define PRINT_MIME_PARSER_DEBUG(a)
-#endif
-
 namespace models
 {
     typedef enum {

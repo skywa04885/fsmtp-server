@@ -10,6 +10,7 @@
 #include <cassandra.h>
 
 #include "../logger.src.hpp"
+#include "../pre.hpp"
 
 namespace cassandra
 {

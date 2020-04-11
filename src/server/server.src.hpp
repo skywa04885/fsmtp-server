@@ -16,13 +16,15 @@
 #include <fstream>
 #include <memory.h>
 #include <atomic>
+#include <openssl/ssl.h>
 
-#include "../db/cassandra.src.hpp";
+#include "../db/cassandra.src.hpp"
 #include "../logger.src.hpp"
 #include "commands.src.hpp"
 #include "../email.src.hpp"
 #include "../parsers/mail-parser.src.hpp"
 #include "../user.src.hpp"
+#include "../pre.hpp"
 
 #define MAX_THREADS 6
 

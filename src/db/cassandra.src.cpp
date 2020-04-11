@@ -34,7 +34,7 @@ namespace cassandra
             const char *message;
             size_t message_len;
             cass_future_error_message(this->c_ConnectFuture, &message, &message_len);
-            std::cerr << "cassandra.src.cpp: " << message << std::endl;
+            PREP_ERROR("Cassandra could not initialize connection", message);
             success = false;
         }
 

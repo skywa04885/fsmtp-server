@@ -9,7 +9,7 @@
 
 int main() {
     //Runs the server
-   server::run(25);
-   // Closes with code 0
-   return 0;
+    server::run(25);
+    // Closes with code 0
+    return 0;
 }

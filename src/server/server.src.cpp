@@ -14,44 +14,53 @@ namespace server
 
     int run(const unsigned int& port)
     {
+        // Prints text if debug enabled
+        DEBUG_ONLY(std::cout << std::endl << "\033[1m\033[31m - SERVER DEBUG ENABLED - \033[0m" << std::endl << std::endl;);
+
         /*
          * Initializes the server socket
          */
 
         // Creates the logger
-        logger::Console print(logger::Level::LOGGER_INFO, "Run@Server");
-        print << "Made by Luke Rieff ;)" << logger::ConsoleOptions::ENDL;
+        DEBUG_ONLY(logger::Console print(logger::Level::LOGGER_INFO, "Run@Server"))
+        DEBUG_ONLY(print << "Made by Luke Rieff ;)" << logger::ConsoleOptions::ENDL)
+
         // Creates the server struct
         struct sockaddr_in server{};
         server.sin_addr.s_addr = INADDR_ANY;
         server.sin_family = AF_INET;
         server.sin_port = htons(port);
+
         // Creates the socket
         int serverSock = socket(AF_INET, SOCK_STREAM, 0);
         if (serverSock < 0)
         {
-            print.setLevel(logger::Level::LOGGER_FATAL);
-            print << "Could not create socket, quitting !" << logger::ConsoleOptions::ENDL;
+            DEBUG_ONLY(print.setLevel(logger::Level::LOGGER_FATAL))
+            DEBUG_ONLY(print << "Could not create socket, quitting !" << logger::ConsoleOptions::ENDL)
             return -1;
         }
+
         // Prints that the socket has been created
-        print << "Socket has been created." << logger::ConsoleOptions::ENDL;
+        DEBUG_ONLY(print << "Socket has been created." << logger::ConsoleOptions::ENDL)
+
         // Sets the socket options
         int option = 1;
         setsockopt(serverSock, SOL_SOCKET, SO_REUSEADDR, (char *)&option, sizeof(option));
         // Binds the socket
         if (bind(serverSock, (struct sockaddr *)&server, sizeof(server)) < 0)
         {
-            print.setLevel(logger::Level::LOGGER_FATAL);
-            print << "Could not bind socket, quitting !" << logger::ConsoleOptions::ENDL;
+            PREP_ERROR("Pre-Listening error", "Could not bind socket ... stopping !")
             return -1;
         }
+
         // Prints that the socket is bind
-        print << "Socket bind successfully." << logger::ConsoleOptions::ENDL;
+        DEBUG_ONLY(print << "Socket bind successfully." << logger::ConsoleOptions::ENDL);
+
         // Listens the server
         listen(serverSock, 40);
+
         // Prints that the socket is listening
-        print << "FSMTP Listening on port " << port << "." << logger::ConsoleOptions::ENDL;
+        DEBUG_ONLY(print << "FSMTP Listening on port " << port << "." << logger::ConsoleOptions::ENDL)
 
         /*
          * Starts accepting the clients
@@ -77,11 +86,11 @@ namespace server
             if (clientSocket < 0)
             {
                 // Sets the print level to warning
-                print.setLevel(logger::Level::LOGGER_WARNING);
+                DEBUG_ONLY(print.setLevel(logger::Level::LOGGER_WARNING))
                 // Prints that the client could not connect successfully
-                print << "Client " << inet_ntoa(client.sin_addr) << " could not initialize connection." << logger::ConsoleOptions::ENDL;
+                DEBUG_ONLY(print << "Client " << inet_ntoa(client.sin_addr) << " could not initialize connection." << logger::ConsoleOptions::ENDL)
                 // Sets the print level to info
-                print.setLevel(logger::Level::LOGGER_INFO);
+                DEBUG_ONLY(print.setLevel(logger::Level::LOGGER_INFO))
                 // Continues
                 continue;
             }
@@ -97,21 +106,21 @@ namespace server
                     setsockopt(clientSocket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0
             ) {
                 // Sets the print level to error
-                print.setLevel(logger::Level::LOGGER_ERROR);
+                DEBUG_ONLY(print.setLevel(logger::Level::LOGGER_ERROR))
                 // Prints the error
-                print << "Client " << inet_ntoa(client.sin_addr) <<
+                DEBUG_ONLY(print << "Client " << inet_ntoa(client.sin_addr) <<
                     " could not be assigned an timeout, closing transmission channel .." <<
-                    logger::ConsoleOptions::ENDL;
+                    logger::ConsoleOptions::ENDL)
                 // Sets the print level to info
-                print.setLevel(logger::Level::LOGGER_INFO);
+                DEBUG_ONLY(print.setLevel(logger::Level::LOGGER_INFO))
                 // Closes the connection, and continues
                 shutdown(clientSocket, SHUT_RDWR);
                 continue;
             }
 
             // Assigns thread to client
-            print << "Client " << inet_ntoa(client.sin_addr) << " initialized connection, assigning thread .." <<
-                logger::ConsoleOptions::ENDL;
+            DEBUG_ONLY(print << "Client " << inet_ntoa(client.sin_addr) << " initialized connection, assigning thread .." <<
+                logger::ConsoleOptions::ENDL)
             // Copies the current variables
             // into a separate memory location
             int *clientSocketP = reinterpret_cast<int *>(malloc(sizeof(int)));
@@ -132,18 +141,18 @@ namespace server
 
     void sendMessage(const int *socket, std::string& message, logger::Console& print)
     {
-        print << "Transmitting message [ Message: " << message << " ]." << logger::ConsoleOptions::ENDL;
+        DEBUG_ONLY(print << "Transmitting message [ Message: " << message << " ]." << logger::ConsoleOptions::ENDL)
         // Appends the newline characters
         message.append("\r\n");
         // Sends the message
         if (send(*socket, message.c_str(), message.length(), 0) < 0)
         {
             // Sets the print level to error
-            print.setLevel(logger::Level::LOGGER_ERROR);
+            DEBUG_ONLY(print.setLevel(logger::Level::LOGGER_ERROR))
             // Prints the error
-            print << "Could not send message [ Message: " << message << " ]." << logger::ConsoleOptions::ENDL;
+            DEBUG_ONLY(print << "Could not send message [ Message: " << message << " ]." << logger::ConsoleOptions::ENDL)
             // Sets the print level to info
-            print.setLevel(logger::Level::LOGGER_INFO);
+            DEBUG_ONLY(print.setLevel(logger::Level::LOGGER_INFO))
         }
     }
 
@@ -162,7 +171,7 @@ namespace server
         // Sends the response
         sendMessage(socket, response, print);
         // Shutdowns the socket
-        print << "Client made syntax error ! transmission channel closing, breaking." << logger::ConsoleOptions::ENDL;
+        DEBUG_ONLY(print<< "Client made syntax error ! transmission channel closing, breaking." << logger::ConsoleOptions::ENDL)
     }
 
     void connectionThread(ConnectionThreadParams params)
@@ -181,7 +190,7 @@ namespace server
         // Creates the logger
         logger::Console print(logger::Level::LOGGER_INFO, printPrefix.c_str());
         // Prints that the thread has been created
-        print << "Thread assigned successfully." << logger::ConsoleOptions::ENDL;
+        DEBUG_ONLY(print << "Thread assigned successfully." << logger::ConsoleOptions::ENDL)
 
         /**
          * Creates cassandra connection
@@ -197,7 +206,7 @@ namespace server
             print.setLevel(logger::Level::LOGGER_INFO);
         } else
         {
-            print << "Thread successfully connected to cassandra." << logger::ConsoleOptions::ENDL;
+            DEBUG_ONLY(print << "Thread successfully connected to cassandra." << logger::ConsoleOptions::ENDL)
         }
 
         /**
@@ -245,9 +254,9 @@ namespace server
             if (readLen <= 0)
             {
                 // Sets the print level
-                print.setLevel(logger::Level::LOGGER_WARNING);
+                DEBUG_ONLY(print.setLevel(logger::Level::LOGGER_WARNING))
                 // Prints that the socket disconnected
-                print << "Client closed transmission channel, breaking." << logger::ConsoleOptions::ENDL;
+                DEBUG_ONLY(print << "Client closed transmission channel, breaking." << logger::ConsoleOptions::ENDL)
                 // Socket disconnected
                 break;
             }
@@ -284,7 +293,7 @@ namespace server
                     cass_uuid_gen_time(uuidGen, &result.m_UUID);
                     cass_uuid_gen_free(uuidGen);
 
-                    std::cout << result.save(connection.c_Session) << std::endl;
+                    result.save(connection.c_Session);
 
                     // Continues
                     continue;
@@ -295,7 +304,7 @@ namespace server
             // Parses the current command
             std::tie(currentCommand, currentCommandArgs) = serverCommand::parse(sBuffer);
             // Prints the current command
-            print << "Received [ Command: '" << serverCommand::serverCommandToString(currentCommand) << "', Argument: '" << currentCommandArgs << "' ]." << logger::ConsoleOptions::ENDL;
+            DEBUG_ONLY(print << "Received [ Command: '" << serverCommand::serverCommandToString(currentCommand) << "', Argument: '" << currentCommandArgs << "' ]." << logger::ConsoleOptions::ENDL)
             // Checks how to respond
             switch (currentCommand)
             {
@@ -337,6 +346,15 @@ namespace server
                         // Parses the data
                         if (parsers::parseAddress(currentCommandArgs, result.m_TransportFrom) >= 0 && !currentCommandArgs.empty())
                         {
+                            std::string username = result.m_TransportFrom.e_Address.substr(0, result.m_TransportFrom.e_Address.find_first_of("@"));
+                            std::string domain = result.m_TransportFrom.e_Address.substr(result.m_TransportFrom.e_Address.find_first_of("@") + 1, result.m_TransportFrom.e_Address.length() - result.m_TransportFrom.e_Address.find_first_of("@") - 1);
+
+                            // Checks if it is from an Fannst Sender, so the message needs to be added to relay queue
+                            if (domain == "fannst.nl")
+                            { // Is an sender from fannst
+                                DEBUG_ONLY(print << "Message is being sent from Fannst Sender, possible relay accepted .." << logger::ConsoleOptions::ENDL)
+                            }
+
                             // Generates the response
                             response = serverCommand::generate(250, "Ok Proceed");
                             // Sends the response
@@ -344,7 +362,7 @@ namespace server
                             // Sets the phase
                             connPhasePt = ConnPhasePT::PHASE_PT_MAIL_FROM;
                             // Prints an update
-                            print << "Message source: " << result.m_TransportFrom.e_Name << " <" << result.m_TransportFrom.e_Address << ">" << logger::ConsoleOptions::ENDL;
+                            DEBUG_ONLY(print << "Message source: " << result.m_TransportFrom.e_Name << " <" << result.m_TransportFrom.e_Address << ">" << logger::ConsoleOptions::ENDL)
                             // Breaks
                             break;
                         }
@@ -401,8 +419,8 @@ namespace server
                             // Sets the phase
                             connPhasePt = ConnPhasePT::PHASE_PT_MAIL_TO;
                             // Prints an update
-                            print << "Message target: " << result.m_TransportTo.e_Name << " <" <<
-                                result.m_TransportTo.e_Address << ">" << logger::ConsoleOptions::ENDL;
+                            DEBUG_ONLY(print << "Message target: " << result.m_TransportTo.e_Name << " <" <<
+                                result.m_TransportTo.e_Address << ">" << logger::ConsoleOptions::ENDL)
                             // Breaks
                             break;
                         }
@@ -413,6 +431,10 @@ namespace server
                     // Sends the message that action is not allowed
                     sendInvalidOrderError(params.clientSocket, "MAIL FROM", print);
                     // Breaks
+                    break;
+                }
+                // THe STARTTLS secion
+                case serverCommand::SMTPServerCommand::START_TLS: {
                     break;
                 }
                 // The data section
@@ -450,9 +472,9 @@ namespace server
             delete params.clientSocket;
             delete params.client;
             // Sets the print level
-            print.setLevel(logger::Level::LOGGER_WARNING);
+            DEBUG_ONLY(print.setLevel(logger::Level::LOGGER_WARNING))
             // Prints that the client disconnected
-            print << "Server closed transmission channel, client disconnected." << logger::ConsoleOptions::ENDL;
+            DEBUG_ONLY(print << "Server closed transmission channel, client disconnected." << logger::ConsoleOptions::ENDL)
 
             // Makes thread available
             _usedThreads--;
