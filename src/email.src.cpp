@@ -11,6 +11,9 @@
 namespace models
 {
     int Email::save(CassSession *session) {
+        // Generates the bukket
+        this->m_Bucket = Email::getCurrentBucket();
+
         /**
          * 1. Initializes the types
          * 2. Create the m_transport_to
@@ -105,7 +108,7 @@ namespace models
             cass_user_type_set_string_by_name(m_to_temp, "e_address", address.e_Address.c_str());
 
             // Appends it to the list
-            cass_collection_append_user_type(m_from, m_to_temp);
+            cass_collection_append_user_type(m_to, m_to_temp);
 
             // Frees the memory
             cass_user_type_free(m_to_temp);
@@ -143,36 +146,41 @@ namespace models
 
         for (const auto &section : this->m_Content)
         {
-             // Loops over the content sections
-            CassUserType *m_content_temp = cass_user_type_new_from_data_type(udt_email_content_section);
+            // Creates the section
+            CassUserType *m_content_section_temp = cass_user_type_new_from_data_type(udt_email_content_section);
 
-            // Creates the m_content headers list
-            CassCollection *m_content_headers = cass_collection_new(CASS_COLLECTION_TYPE_LIST, section.e_FullHeaders.size());
+            // Creates the section headers
+            CassCollection *m_content_section_headers_temp = cass_collection_new(CASS_COLLECTION_TYPE_LIST, section.e_FullHeaders.size());
 
-            // Loops over the headers and appends them to m_content_headers
-//            for (const auto &header : section.e_FullHeaders)
-//            {
-//                CassUserType *m_content_headers_temp = cass_user_type_new_from_data_type(udt_email_header);
-//
-//                // Sets the values
-//                cass_user_type_set_string_by_name(m_content_headers_temp, "e_key", header.e_Key.c_str());
-//                cass_user_type_set_string_by_name(m_content_headers_temp, "e_value", header.e_Value.c_str());
-//
-//                // Appends it to the list
-//                cass_collection_append_user_type(m_content_headers, m_content_headers_temp);
-//
-//                // Frees the memory
-//                cass_user_type_free(m_content_headers_temp);
-//            }
+            // Loops over the section headers
+            for (const auto &header : section.e_FullHeaders)
+            {
+                // Creates the header temp
+                CassUserType *m_content_section_header_temp = cass_user_type_new_from_data_type(udt_email_header);
 
-            // Sets the values
-            cass_user_type_set_string_by_name(m_content_temp, "e_content", section.e_Content.c_str());
-            cass_user_type_set_int32_by_name(m_content_temp, "e_type", section.e_Type);
-            cass_user_type_set_int32_by_name(m_content_temp, "e_index", section.e_Index);
-//            cass_user_type_set_collection_by_name(m_content_temp, "e_full_headers", m_content_headers);
+                // Sets the variables
+                cass_user_type_set_string_by_name(m_content_section_header_temp, "e_key", header.e_Key.c_str());
+                cass_user_type_set_string_by_name(m_content_section_header_temp, "e_value", header.e_Value.c_str());
 
-            cass_collection_free(m_content_headers);
-            cass_user_type_free(m_content_temp);
+                // Appends to the collection
+                cass_collection_append_user_type(m_content_section_headers_temp, m_content_section_header_temp);
+
+                // Frees the memory
+                cass_user_type_free(m_content_section_header_temp);
+            }
+
+            // Sets the variables
+            cass_user_type_set_collection_by_name(m_content_section_temp, "e_full_headers", m_content_section_headers_temp);
+            cass_user_type_set_string_by_name(m_content_section_temp, "e_content", section.e_Content.c_str());
+            cass_user_type_set_int32_by_name(m_content_section_temp, "e_index", section.e_Index);
+            cass_user_type_set_int32_by_name(m_content_section_temp, "e_type", section.e_Type);
+
+            // Appends to the result collection
+            cass_collection_append_user_type(m_content, m_content_section_temp);
+
+            // Frees memory
+            cass_user_type_free(m_content_section_temp);
+            cass_collection_free(m_content_section_headers_temp);
         }
 
         /**
@@ -205,7 +213,7 @@ namespace models
         cass_statement_bind_string(statement, 5, this->m_Boundary.c_str());
         cass_statement_bind_int32(statement, 6, this->m_ContentType);
         cass_statement_bind_int64(statement, 7, this->m_Timestamp);
-        cass_statement_bind_int64(statement, 8, this->m_Timestamp);
+        cass_statement_bind_int64(statement, 8, this->m_ReceiveTimestamp);
         cass_statement_bind_collection(statement, 9, m_from);
         cass_statement_bind_collection(statement, 10, m_to);
         cass_statement_bind_collection(statement, 11, m_full_headers);
@@ -242,5 +250,14 @@ namespace models
         }
 
         return -2;
+    }
+
+    long Email::getCurrentBucket() {
+        // Gets the current time point
+        std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
+        // Calculates the milliseconds sinds somewhere in 1970
+        long now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+        // Calculates the bucket, basically new one every 18 hours
+        return std::round(now_ms / 1000 / 60 / 60 / 18);
     }
 };

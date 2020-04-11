@@ -87,7 +87,9 @@ namespace server
                 // Sets the print level to error
                 print.setLevel(logger::Level::LOGGER_ERROR);
                 // Prints the error
-                print << "Client " << inet_ntoa(client.sin_addr) << " could not be assigned an timeout, closing transmission channel .." << logger::ConsoleOptions::ENDL;
+                print << "Client " << inet_ntoa(client.sin_addr) <<
+                    " could not be assigned an timeout, closing transmission channel .." <<
+                    logger::ConsoleOptions::ENDL;
                 // Sets the print level to info
                 print.setLevel(logger::Level::LOGGER_INFO);
                 // Closes the connection, and continues
@@ -95,7 +97,8 @@ namespace server
                 continue;
             }
             // Assigns thread to client
-            print << "Client " << inet_ntoa(client.sin_addr) << " initialized connection, assigning thread .." << logger::ConsoleOptions::ENDL;
+            print << "Client " << inet_ntoa(client.sin_addr) << " initialized connection, assigning thread .." <<
+                logger::ConsoleOptions::ENDL;
             // Copies the current variables
             // into a separate memory location
             int *clientSocketP = reinterpret_cast<int *>(malloc(sizeof(int)));
@@ -253,8 +256,11 @@ namespace server
 
                     // Sets normally empty values
                     result.m_Timestamp = 0;
-                    result.m_ReceiveTimestamp = 0;
-                    result.m_Bucket = 0;
+
+                    // Sets the timestamp of receive
+                    std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
+                    result.m_ReceiveTimestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            now.time_since_epoch()).count();
 
                     // Creates an id for the message
                     CassUuidGen *uuidGen = cass_uuid_gen_new();
@@ -352,7 +358,8 @@ namespace server
                             if (e == -1)
                             {
                                 // Generates the response
-                                response = serverCommand::generate(471, "Something went wrong with Apache Cassandra");
+                                response = serverCommand::generate(
+                                        471, "Something went wrong with Apache Cassandra");
                                 // Sends the response
                                 sendMessage(params.clientSocket, response, print);
                                 // Ends
@@ -377,7 +384,8 @@ namespace server
                             // Sets the phase
                             connPhasePt = ConnPhasePT::PHASE_PT_MAIL_TO;
                             // Prints an update
-                            print << "Message target: " << result.m_TransportTo.e_Name << " <" << result.m_TransportTo.e_Address << ">" << logger::ConsoleOptions::ENDL;
+                            print << "Message target: " << result.m_TransportTo.e_Name << " <" <<
+                                result.m_TransportTo.e_Address << ">" << logger::ConsoleOptions::ENDL;
                             // Breaks
                             break;
                         }

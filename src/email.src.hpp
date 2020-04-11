@@ -9,7 +9,9 @@
 
 #include <vector>
 #include <iostream>
+#include <chrono>
 #include <string>
+#include <math.h>
 
 #include <cassandra.h>
 
@@ -76,6 +78,7 @@ namespace models
         std::vector<EmailContentSection> m_Content;
         // Methods
         int save(CassSession *session);
+        static long getCurrentBucket();
     };
 };
 
