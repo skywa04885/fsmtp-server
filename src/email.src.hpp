@@ -11,6 +11,8 @@
 #include <iostream>
 #include <string>
 
+#include <cassandra.h>
+
 #define EMAIL_PARSE_DEBUG
 
 #ifdef EMAIL_PARSE_DEBUG
@@ -60,16 +62,20 @@ namespace models
         std::string m_Date;
         std::string m_Boundary;
         EmailContentType m_ContentType;
+        long m_Bucket;
+        // User data
+        CassUuid m_UUID;
+        CassUuid m_UserUUID;
         // The dates
-        uint64_t m_Timestamp;
-        uint64_t m_ReceiveTimestamp;
+        long m_Timestamp;
+        long m_ReceiveTimestamp;
         // The full data vectors
         std::vector<EmailAddress> m_From;
         std::vector<EmailAddress> m_To;
         std::vector<EmailHeader> m_FullHeaders;
         std::vector<EmailContentSection> m_Content;
         // Methods
-        int save();
+        int save(CassSession *session);
     };
 };
 
@@ -134,6 +140,12 @@ inline std::ostream &operator << (std::ostream &out, models::Email const &data)
     out << " - \033[34m[Message ID\033[0m: \033[33m" << data.m_MessageID << "\033[0m" << std::endl;
     out << " - \033[34m[Message Date]\033[0m: \033[33m" << data.m_Date << "\033[0m" << std::endl;
     out << " - \033[34m[Boundary]\033[0m: \033[33m" << data.m_Boundary << "\033[0m" << std::endl;
+
+    char output[64];
+    cass_uuid_string(data.m_UserUUID, reinterpret_cast<char *>(&output));
+    out << " - \033[34m[User UUID]\033[0m: \033[33m" << output << "\033[0m" << std::endl;
+    cass_uuid_string(data.m_UUID, reinterpret_cast<char *>(&output));
+    out << " - \033[34m[Message UUID]\033[0m: \033[33m" << output << "\033[0m" << std::endl;
 
     // Appends the mail to
     out << " - \033[34m[Mail To]\033[0m: " << std::endl;

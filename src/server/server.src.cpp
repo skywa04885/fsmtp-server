@@ -168,7 +168,7 @@ namespace server
          */
 
         bool connectionSuccess;
-        cassandra::Connection connection("192.168.132.133", connectionSuccess, print);
+        cassandra::Connection connection("192.168.132.133", connectionSuccess);
         if (!connectionSuccess)
         {
             // Prints error message
@@ -242,14 +242,27 @@ namespace server
                 {
                     // Sets the status
                     connPhasePt = ConnPhasePT::PHASE_PT_DATA_END;
+
                     // Generates the response
                     response = serverCommand::generate(250, "Ok: message received ;)");
                     // Sends the response
                     sendMessage(params.clientSocket, response, print);
+
                     // Parses the message
-                    models::Email email;
-                    parsers::parseMime(dataBuffer, email);
-                    std::cout << email << std::endl;
+                    parsers::parseMime(dataBuffer, result);
+
+                    // Sets normally empty values
+                    result.m_Timestamp = 0;
+                    result.m_ReceiveTimestamp = 0;
+                    result.m_Bucket = 0;
+
+                    // Creates an id for the message
+                    CassUuidGen *uuidGen = cass_uuid_gen_new();
+                    cass_uuid_gen_time(uuidGen, &result.m_UUID);
+                    cass_uuid_gen_free(uuidGen);
+
+                    std::cout << result.save(connection.c_Session) << std::endl;
+
                     // Continues
                     continue;
                 }
@@ -353,6 +366,9 @@ namespace server
                                 // Ends
                                 goto end;
                             }
+
+                            // Sets the user id to the email user id
+                            result.m_UserUUID = userQuickAccess.u_Uuid;
 
                             // Generates the response
                             response = serverCommand::generate(250, "Ok Proceed");

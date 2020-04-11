@@ -13,15 +13,13 @@
 
 namespace cassandra
 {
-    void cassLoggerErrorHandler(CassFuture *future, logger::Console& print);
-
     class Connection
     {
     public:
-        Connection(const char *c_Hosts, bool& success, logger::Console& print);
+        Connection(const char *c_Hosts, bool& success);
         ~Connection();
 
-        CassSession * c_Session;
+        CassSession *c_Session;
     private:
         CassFuture *c_ConnectFuture;
         CassCluster *c_Cluster;

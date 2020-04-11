@@ -76,8 +76,10 @@ namespace models
         // Checks if there was an error
         if (cass_future_error_code(query_future) != CASS_OK)
         {
-            logger::Console print(logger::Level::LOGGER_ERROR, "test");
-            cassandra::cassLoggerErrorHandler(query_future, print);
+            const char *message;
+            size_t message_len;
+            cass_future_error_message(query_future, &message, &message_len);
+            std::cerr << "user.src.cpp: " << message << std::endl;
             return -1;
         }
 
@@ -116,6 +118,7 @@ namespace models
         cass_future_free(query_future);
         cass_statement_free(statement);
         cass_result_free(result);
+        cass_iterator_free(iterator);
 
         // Returns with code success
         return 0;

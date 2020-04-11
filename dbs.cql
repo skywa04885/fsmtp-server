@@ -67,7 +67,7 @@ create table if not exists inbox_emails (
     m_message_id varchar,
     m_date bigint,
     m_boundary varchar,
-    m_content_Type int,
+    m_content_type int,
     m_timestamp bigint,
     m_receive_timestamp bigint,
     m_from frozen<list<email_address>>,
