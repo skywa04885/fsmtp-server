@@ -5,6 +5,7 @@
  * Copyright: Free to use, without modifying
  */
 
+#include <fcntl.h>
 #include "server.src.hpp"
 #include "./responses.src.hpp"
 
@@ -13,27 +14,12 @@ namespace server
     std::atomic<int> _usedThreads(0);
     int _maxThreads = MAX_THREADS;
 
-    GUI_ONLY(std::vector<ServerMailThread> _guiThreadList);
-
-    int runGuiThread()
-    {
-        // Initializes gtk
-        gtk_init(0, nullptr);
-
-        // Runs the main window
-        gui::MainWindow mainWindow;
-        mainWindow.run();
-
-        // Enables gtk
-        gtk_main();
-    }
-
     /**
      * Runs an server instance
      * @param port
      * @return
      */
-    int run(const unsigned int& port)
+    int run(const unsigned int& port, int *argc, char ***argv)
     {
         // Prints text if debug enabled
         DEBUG_ONLY(std::cout << std::endl << "\033[1m\033[31m - SERVER DEBUG ENABLED - \033[0m" << std::endl << std::endl;);
@@ -46,13 +32,6 @@ namespace server
         DEBUG_ONLY(logger::Console print(logger::Level::LOGGER_INFO, "Run@Server"))
         DEBUG_ONLY(print << "Made by Luke Rieff ;)" << logger::ConsoleOptions::ENDL)
 
-        // ----
-        // Creates the GUI thread
-        // ----
-
-        std::thread guiThread(&runGuiThread);
-        guiThread.detach();
-
         // Creates the server struct
         struct sockaddr_in server{};
         server.sin_addr.s_addr = INADDR_ANY;
@@ -63,10 +42,12 @@ namespace server
         int serverSock = socket(AF_INET, SOCK_STREAM, 0);
         if (serverSock < 0)
         {
-            DEBUG_ONLY(print.setLevel(logger::Level::LOGGER_FATAL))
-            DEBUG_ONLY(print << "Could not create socket, quitting !" << logger::ConsoleOptions::ENDL)
+            PREP_ERROR("Could not create socket", "We do not know why .")
             return -1;
         }
+
+        // Sets the server to be non-blocking
+        fcntl(serverSock, F_SETFL, O_NONBLOCK);
 
         // Prints that the socket has been created
         DEBUG_ONLY(print << "Socket has been created." << logger::ConsoleOptions::ENDL)
@@ -116,12 +97,7 @@ namespace server
             // Checks if the client was successfully accepted
             if (clientSocket < 0)
             {
-                #ifdef DEBUG
-                print.setLevel(logger::Level::LOGGER_WARNING);
-                print << "Client " << inet_ntoa(client.sin_addr) << " could not initialize connection." << logger::ConsoleOptions::ENDL;
-                print.setLevel(logger::Level::LOGGER_INFO);
-                #endif
-
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
                 continue;
             }
 
@@ -253,6 +229,7 @@ namespace server
         std::string sBuffer;
         char buffer[1024];
         int readLen;
+        bool err = false;
 
         // ----
         // Infinite loop, used to process data
@@ -335,7 +312,10 @@ namespace server
                 // Client introduces
                 case serverCommand::SMTPServerCommand::HELLO: {
                     if (!responses::plain::handleHelo(params.clientSocket, currentCommandArgs,
-                            connPhasePt, params)) goto end;
+                            connPhasePt, params)) {
+                        err = true;
+                        goto end;
+                    };
                     break;
                 }
 
@@ -348,14 +328,20 @@ namespace server
                 // Handles 'MAIL_FROM'
                 case serverCommand::SMTPServerCommand::MAIL_FROM: {
                     if (!responses::plain::handleMailFrom(params.clientSocket, currentCommandArgs,
-                            result, connPhasePt)) goto end;
+                            result, connPhasePt)) {
+                        err = true;
+                        goto end;
+                    };
                     break;
                 }
 
                 // Handles 'RCPT TO'
                 case serverCommand::SMTPServerCommand::RCPT_TO: {
                     if (!responses::plain::handleRcptTo(params.clientSocket, currentCommandArgs, result,
-                            connPhasePt, connection.c_Session)) goto end;
+                            connPhasePt, connection.c_Session)) {
+                        err = true;
+                        goto end;
+                    };
                     break;
                 }
 
@@ -386,6 +372,7 @@ namespace server
                 // Command not found
                 default: {
                     responses::plain::syntaxError(params.clientSocket);
+                    err = true;
                     goto end;
                 }
             }

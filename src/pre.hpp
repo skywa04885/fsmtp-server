@@ -12,11 +12,6 @@
 #define DEBUG
 
 /**
- * Define GUI, when using an Linux Desktop, and want to see an GUI
- */
-#define GUI
-
-/**
  * Error messages, used widely
  */
 #define PREP_ERROR(a, b)                                                            \
@@ -28,10 +23,4 @@
 #define DEBUG_ONLY(a) a;
 #else
 #define DEBUG_ONLY(a)
-#endif
-
-#ifdef GUI
-#define GUI_ONLY(a) a;
-#else
-#define GUI_ONLY(a)
 #endif
