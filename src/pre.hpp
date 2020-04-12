@@ -23,9 +23,15 @@
     std::cout << "\033[31m[ERROR]: \033[0m" << __FILE__ << "@" << __LINE__ << ": "  \
     << a << ": " << b << std::endl;
 
-// Will disable some single-line cpde
+// Will disable some single-line code
 #ifdef DEBUG
 #define DEBUG_ONLY(a) a;
 #else
 #define DEBUG_ONLY(a)
+#endif
+
+#ifdef GUI
+#define GUI_ONLY(a) a;
+#else
+#define GUI_ONLY(a)
 #endif

@@ -13,6 +13,21 @@ namespace server
     std::atomic<int> _usedThreads(0);
     int _maxThreads = MAX_THREADS;
 
+    GUI_ONLY(std::vector<ServerMailThread> _guiThreadList);
+
+    int runGuiThread()
+    {
+        // Initializes gtk
+        gtk_init(0, nullptr);
+
+        // Runs the main window
+        gui::MainWindow mainWindow;
+        mainWindow.run();
+
+        // Enables gtk
+        gtk_main();
+    }
+
     /**
      * Runs an server instance
      * @param port
@@ -30,6 +45,13 @@ namespace server
         // Creates the logger
         DEBUG_ONLY(logger::Console print(logger::Level::LOGGER_INFO, "Run@Server"))
         DEBUG_ONLY(print << "Made by Luke Rieff ;)" << logger::ConsoleOptions::ENDL)
+
+        // ----
+        // Creates the GUI thread
+        // ----
+
+        std::thread guiThread(&runGuiThread);
+        guiThread.detach();
 
         // Creates the server struct
         struct sockaddr_in server{};

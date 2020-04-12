@@ -25,6 +25,7 @@
 #include "../parsers/mail-parser.src.hpp"
 #include "../user.src.hpp"
 #include "../pre.hpp"
+#include "../gui-gtk/main-window.src.hpp"
 
 #define MAX_THREADS 6
 
@@ -56,7 +57,7 @@ namespace server
         PHASE_EC_QUIT
     } ConnPhaseEC;
 
-#ifdef GUI
+    #ifdef GUI
     typedef struct {
         std::string s_RemoteAddr;
         const int s_SocNum;
@@ -65,7 +66,7 @@ namespace server
         bool s_Success;
         long s_TimeStamp;
     } ServerMailThread;
-#endif
+    #endif
 
     int run(const unsigned int& port);
 

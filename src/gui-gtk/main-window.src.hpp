@@ -8,7 +8,8 @@ namespace gui
     {
     public:
         MainWindow();
-        ~MainWindow();
+
+        void run();
     private:
         GtkWidget *c_Window;
     };

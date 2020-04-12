@@ -45,6 +45,7 @@ add_library(
         src/server/responses.src.hpp
         src/pre.hpp
         src/gui-gtk/main-window.src.hpp
+        src/gui-gtk/main-window.src.cpp
 )
 
 add_executable(fsmtp_server main.cpp)
