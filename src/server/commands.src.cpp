@@ -38,7 +38,7 @@ namespace serverCommand
             }
         } else if (cBuffer[0] == 'S')
         { // First letter is: D
-            if (buffer.substr(0, 8).compare("START_TLS") == 0)
+            if (buffer.substr(0, 8).compare("STARTTLS") == 0)
             { // Command: RCPT TO
                 commandResult = SMTPServerCommand::START_TLS;
             }
@@ -183,25 +183,37 @@ namespace serverCommand
      */
     const char *gen(int code, const char *param)
     {
-        // Creates the result stream with the number
+
+        // ----
+        // Prepares the strings
+        // ----
+
+        // Prepares the final result
         char *result = reinterpret_cast<char *>(malloc(sizeof(char) * (strlen(param) + 80)));
+        result[0] = '\0';               // Sets the string end, strcat will move this to the end
 
         // Result: Code + WS
-        sprintf(result, "%d ", code);
+        char *temp = reinterpret_cast<char *>(malloc(sizeof(char) * 8));
+        sprintf(&temp[0], "%d", code);
+        strcat(&result[0], temp);
 
-        // Checks what should be appended
+        // Checks if there is an param, and an space needs to be appended
+        if (param != nullptr) strcat(result, " ");
+
+        // ----
+        // Appends the message based on the code
+        // ----
+
         switch (code)
         {
             // Introduction
             case 220: {
-                strcat(result, param);
-                strcat(result, " ");
                 strcat(result, "SMTP - Fannst SMTP Server");
                 break;
             };
             // Continue, param based
             case 250: {
-                strcat(result, param);
+                strcat(&result[0], &param[0]);
                 break;
             }
             // Data intro

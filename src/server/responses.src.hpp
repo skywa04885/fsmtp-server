@@ -160,10 +160,9 @@ namespace server
              */
             void preContextProceed(int *soc)
             {
-                // Generates the message
-                const char * message= serverCommand::gen(250, "OK Proceed");
-                // Transmits the message
+                const char *message = serverCommand::gen(250, "OK Proceed");
                 write(soc, message, strlen(message));
+                delete message;
             }
 
             /**
@@ -173,10 +172,9 @@ namespace server
              */
             void preContextBadSequence(int *soc, const char *reqMsg)
             {
-                // Generates the message
                 const char *message = serverCommand::gen(503, reqMsg);
-                // Transmits the message
                 write(soc, message, strlen(message));
+                delete message;
             }
 
             /**
@@ -185,10 +183,9 @@ namespace server
              */
             void syntaxError(int *soc)
             {
-                // Generates the message
                 const char *message = serverCommand::gen(501, "");
-                // Transmits the message
                 write(soc, message, strlen(message));
+                delete message;
             }
 
             // ----
@@ -224,6 +221,9 @@ namespace server
                     return false;
                 }
 
+                // Prints to the console
+                std::cout << "Email receiving from: " << args << std::endl;
+
                 // Checks if the sender is a person from Fannst, and possibly tries to relay message
                 // TODO: Relay check
 
@@ -241,14 +241,14 @@ namespace server
             {
                 // Generates the message, I'm using the C string, because it just is faster.
                 char temp[80];
+                temp[0] = '\0';
                 strcat(temp, inet_ntoa(params.client->sin_addr));
                 strcat(temp, " nice to meet you !");
 
-                // Generates the message itself
+                // Sends the response message
                 const char *message = serverCommand::gen(250, temp);
-
-                // Sends the message
                 write(soc, message, strlen(message));
+                delete message;
 
                 // Updates the phase
                 phase = ConnPhasePT::PHASE_PT_HELLO;
@@ -259,11 +259,10 @@ namespace server
 
             void handleQuit(int *soc)
             {
-                // Generates the message
+                // Sends the response message
                 const char *message = serverCommand::gen(221, "");
-
-                // Sends the message
                 write(soc, message, strlen(message));
+                delete message;
             }
 
             bool handleRcptTo(int *soc, const std::string &args, models::Email &email, ConnPhasePT &phase,
@@ -307,11 +306,10 @@ namespace server
                 {
                     PREP_ERROR("Refused parsing", "Address longer then 256 chars, preventing stack overflow ..")
 
-                    // Generates the server error
+                    // Sends the error message
                     const char *message = serverCommand::gen(471, "Address too large, would cause stack overflow ..");
-
-                    // Sends the server error
                     write(soc, message, strlen(message));
+                    delete message;
 
                     // Returns false
                     return false;
@@ -343,15 +341,18 @@ namespace server
                 // Checks if the parsing went good, if not return server error
                 if (username == nullptr || domain == nullptr)
                 {
-                    // Generates server error
+                    // Sends the response message
                     const char *message = serverCommand::gen(471, "could not parse address ..");
-
-                    // Sends the server error
                     write(soc, message, strlen(message));
+                    delete message;
 
                     // Returns that there was an error
                     return false;
                 }
+
+                // ----
+                // Performs user check from Apache Cassandra
+                // ----
 
                 // Finds the receiver on our server
                 models::UserQuickAccess userQuickAccess;
@@ -361,21 +362,19 @@ namespace server
                 // Checks if the user was found
                 if (rc == -1)
                 {
-                    // Generates the response message
+                    // Sends the response message
                     const char *message = serverCommand::gen(471, "Could not perform cassandra query ..");
-
-                    // Writes the message
                     write(soc, message, strlen(message));
+                    delete message;
 
                     // Returns false
                     return false;
                 } else if (rc == -2)
                 {
-                    // Generates the response message
+                    // Sends the response message
                     const char *message = serverCommand::gen(551, "");
-
-                    // Writes the message
                     write(soc, message, strlen(message));
+                    delete message;
 
                     // Returns false
                     return false;
@@ -383,7 +382,6 @@ namespace server
 
                 // Sets the user id to the email user id
                 email.m_UserUUID = userQuickAccess.u_Uuid;
-
 
                 // Sends continue
                 preContextProceed(soc);

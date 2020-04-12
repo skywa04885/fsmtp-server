@@ -25,6 +25,12 @@ namespace server
         DEBUG_ONLY(std::cout << std::endl << "\033[1m\033[31m - SERVER DEBUG ENABLED - \033[0m" << std::endl << std::endl;);
 
         // ----
+        // Initializes required modules
+        // ----
+
+        OPENSSL_init();
+
+        // ----
         // Initializes the server socket
         // ----
 
@@ -61,9 +67,6 @@ namespace server
             PREP_ERROR("Pre-Listening error", "Could not bind socket ... stopping !")
             return -1;
         }
-
-        // Prints that the socket is bind
-        DEBUG_ONLY(print << "Socket bind successfully." << logger::ConsoleOptions::ENDL);
 
         // Listens the server
         listen(serverSock, 40);
@@ -163,16 +166,66 @@ namespace server
     }
 
     /**
+     * Reads passphrase file for OpenSSL Sockets
+     * @param buffer
+     * @param size
+     * @param rwflag
+     * @param u
+     * @return
+     */
+    int sslConfigureContexLoadPassword(char *buffer, int size, int rwflag, void *u)
+    {
+        // Opens the file, with reading mode
+        FILE *file = fopen("../keys/ssl/pp.txt", "r");
+        if (file == nullptr)
+        {
+            // TODO: Handle file error
+        }
+
+        // Reads the password
+        fgets(&buffer[0], size, file);
+        // Returns the length
+        return strlen(&buffer[0]);
+    }
+
+    /**
+     * Configures an OpenSSL context for OpenSSL Sockets
+     * @param ctx
+     * @return
+     */
+    int sslConfigureContext(SSL_CTX *ctx)
+    {
+        SSL_CTX_set_ecdh_auto(ctx, 1);
+        SSL_CTX_set_default_passwd_cb(ctx, &sslConfigureContexLoadPassword);
+
+        // Sets the certificate
+        if (SSL_CTX_use_certificate_file(ctx, "../keys/ssl/cert.pem", SSL_FILETYPE_PEM) <= 0)
+        {
+            ERR_print_errors_fp(stderr);
+            return -1;
+        }
+
+        // Sets the private key
+        if (SSL_CTX_use_PrivateKey_file(ctx, "../keys/ssl/key.pem", SSL_FILETYPE_PEM) <= 0)
+        {
+            ERR_print_errors_fp(stderr);
+            return -1;
+        }
+
+        return 0;
+    }
+
+    /**
      * Method used for single thread
      * @param params
      */
     void connectionThread(ConnectionThreadParams params)
     {
-        _usedThreads++;
+        _usedThreads++;             // Reserves one thread, in global atomic
 
-        /**
-         * Thread introduction
-         */
+        // ----
+        // The startup of the thread
+        // ----
 
         #ifdef DEBUG
         // Creates the logger prefix, with the remote address
@@ -209,27 +262,50 @@ namespace server
         // Sends the initial greeting message
         // ----
 
-        // Generates the message
-        const char *message = serverCommand::gen(220, "smtp.fannst.nl");
+        {
+            // Generates the message
+            const char *message = serverCommand::gen(220, "smtp.fannst.nl");
 
-        // Writes the message
-        responses::plain::write(params.clientSocket, message, strlen(message));
+            // Writes the message
+            responses::plain::write(params.clientSocket, message, strlen(message));
+
+        }
 
         // ----
-        // Defines the variables used in the loop
+        // The current state
         // ----
 
         ConnPhasePT connPhasePt = ConnPhasePT::PHASE_PT_INITIAL;
+
+        // ----
+        // The data storage, buffers etc
+        // ----
+
         serverCommand::SMTPServerCommand currentCommand;
         std::string currentCommandArgs;
         std::string sMessageBuffer;
         std::string dataBuffer;
-        models::Email result;
         std::string response;
         std::string sBuffer;
-        char buffer[1024];
-        int readLen;
-        bool err = false;
+
+        char buffer[1024];          // Kinda large buffer for storing commands, and message temp
+        int readLen = 0;            // The amount of chars, read in the thread at specific moment
+
+        models::Email result;       // The result email
+
+        // ----
+        // The connection status variables
+        // ----
+
+        bool err = false;           // If the current thread has errored out
+        bool usingSSL = false;      // If the connection is making use of START TLS
+
+        // ----
+        // The OpenSSL Connection variables
+        // ----
+
+        SSL_CTX *sslCtx = nullptr;
+        SSL *ssl = nullptr;
 
         // ----
         // Infinite loop, used to process data
@@ -291,7 +367,8 @@ namespace server
                     cass_uuid_gen_free(uuidGen);
 
                     // Saves the email
-                    result.save(connection.c_Session);
+//                    result.save(connection.c_Session);
+                    std::cout << result << std::endl;
 
                     // Continues
                     continue;
@@ -347,6 +424,51 @@ namespace server
 
                 // Handles 'START TLS'
                 case serverCommand::SMTPServerCommand::START_TLS: {
+                    std::cout << "Test" << std::endl;
+                    // Writes the message
+                    const char *message = serverCommand::gen(220, "Go ahead");
+                    responses::plain::write(params.clientSocket, message, strlen(message));
+
+                    // ----
+                    // Initializes OpenSSL
+                    // ----
+
+                    // Creates the context
+                    const SSL_METHOD *method = SSLv23_server_method();
+                    sslCtx = SSL_CTX_new(method);
+                    if (!sslCtx)
+                    {
+                        PREP_ERROR("SSL Error", "Could not create context ..")
+                        ERR_print_errors_fp(stderr);
+                        // TODO: Send error
+                    }
+
+                    // Assigns the keys and certificate
+                    if (sslConfigureContext(sslCtx) < 0)
+                    {
+                        // TODO: Send error
+                    }
+
+                    // ----
+                    // Uses OpenSSL
+                    // ----
+
+                    // Creates the ssl
+                    ssl = SSL_new(sslCtx);
+
+                    // Sets the socket file descriptor
+                    SSL_set_fd(ssl, *params.clientSocket);
+
+                    // Starts the SSL connection
+                    if (SSL_accept(ssl) <= 0)
+                    {
+                        PREP_ERROR("OpenSSL Error", "Could not accept client ..")
+                        ERR_print_errors_fp(stderr);
+                    }
+
+                    // Resets the state
+                    connPhasePt = ConnPhasePT::PHASE_PT_INITIAL;
+
                     break;
                 }
 
@@ -369,6 +491,7 @@ namespace server
                     // Breaks
                     break;
                 }
+
                 // Command not found
                 default: {
                     responses::plain::syntaxError(params.clientSocket);
@@ -378,7 +501,10 @@ namespace server
             }
         }
 
-        // The end will close the socket, and free the memory
+        // ----
+        // End section, will shut down the socket, and perform other stopping operations
+        // ----
+
         end:
             // Closes the socket
             shutdown(*params.clientSocket, SHUT_RDWR);

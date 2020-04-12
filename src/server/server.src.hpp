@@ -16,7 +16,9 @@
 #include <fstream>
 #include <memory.h>
 #include <atomic>
+
 #include <openssl/ssl.h>
+#include <openssl/err.h>
 
 #include "../db/cassandra.src.hpp"
 #include "../logger.src.hpp"
