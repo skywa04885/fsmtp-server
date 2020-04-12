@@ -56,6 +56,17 @@ namespace server
         PHASE_EC_QUIT
     } ConnPhaseEC;
 
+#ifdef GUI
+    typedef struct {
+        std::string s_RemoteAddr;
+        const int s_SocNum;
+        bool s_StillOpen;
+        bool s_SSL;
+        bool s_Success;
+        long s_TimeStamp;
+    } ServerMailThread;
+#endif
+
     int run(const unsigned int& port);
 
     void connectionThread(ConnectionThreadParams params);

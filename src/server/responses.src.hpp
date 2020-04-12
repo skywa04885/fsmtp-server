@@ -15,6 +15,7 @@
 #include "../email.src.hpp"
 #include "../parsers/mail-parser.src.hpp"
 #include "server.src.hpp"
+#include "../user.src.hpp"
 
 namespace server
 {
@@ -185,9 +186,9 @@ namespace server
             void syntaxError(int *soc)
             {
                 // Generates the message
-                const std::string message = serverCommand::generate(501, "");
+                const char *message = serverCommand::gen(501, "");
                 // Transmits the message
-                write(soc, message.c_str(), message.length());
+                write(soc, message, strlen(message));
             }
 
             // ----
@@ -197,7 +198,7 @@ namespace server
             bool handleMailFrom(int *soc, const std::string &args, models::Email &email, ConnPhasePT &phase)
             {
                 // Checks if the sequence is correct
-                if (phase < ConnPhasePT::PHASE_PT_MAIL_TO)
+                if (phase < ConnPhasePT::PHASE_PT_HELLO)
                 {
                     // Writes the error
                     preContextBadSequence(soc, "HELO");
@@ -228,6 +229,10 @@ namespace server
 
                 // Sends continue
                 preContextProceed(soc);
+
+                // Sets the phase
+                phase = ConnPhasePT::PHASE_PT_MAIL_FROM;
+
                 // Returns, everything went fine
                 return true;
             }
@@ -237,7 +242,7 @@ namespace server
                 // Generates the message, I'm using the C string, because it just is faster.
                 char temp[80];
                 strcat(temp, inet_ntoa(params.client->sin_addr));
-                strcat(temp, " nice to meet you !\r\n");
+                strcat(temp, " nice to meet you !");
 
                 // Generates the message itself
                 const char *message = serverCommand::gen(250, temp);
@@ -252,10 +257,142 @@ namespace server
                 return true;
             }
 
+            void handleQuit(int *soc)
+            {
+                // Generates the message
+                const char *message = serverCommand::gen(221, "");
+
+                // Sends the message
+                write(soc, message, strlen(message));
+            }
+
             bool handleRcptTo(int *soc, const std::string &args, models::Email &email, ConnPhasePT &phase,
                     CassSession *cassSession)
             {
                 // Checks if the sequence is correct
+                if (phase < ConnPhasePT::PHASE_PT_MAIL_FROM)
+                {
+                    // Writes the error
+                    preContextBadSequence(soc, "MAIL FROM");
+                    // Returns false
+                    return false;
+                }
+
+                // Checks if the arguments are empty
+                if (args.empty())
+                {
+                    // Writes an syntax error
+                    syntaxError(soc);
+                    // Returns false
+                    return false;
+                }
+
+                // Parses the address
+                if (parsers::parseAddress(args, email.m_TransportTo) < 0)
+                {
+                    // Writes the syntax error
+                    syntaxError(soc);
+                    // Returns false, close connection
+                    return false;
+                }
+
+                // Splits the address
+                char *emailCstr = const_cast<char *>(email.m_TransportTo.e_Address.c_str());
+                char *username = nullptr;
+                char *domain = nullptr;
+                char *tok = strtok(emailCstr, "@");
+
+                // Checks if the string is too long, and if we need to stop
+                if (strlen(emailCstr) > 256)
+                {
+                    PREP_ERROR("Refused parsing", "Address longer then 256 chars, preventing stack overflow ..")
+
+                    // Generates the server error
+                    const char *message = serverCommand::gen(471, "Address too large, would cause stack overflow ..");
+
+                    // Sends the server error
+                    write(soc, message, strlen(message));
+
+                    // Returns false
+                    return false;
+                }
+
+                // Loop over the occurrences, char because of the small size
+                unsigned char i = 0;
+                while (tok != nullptr)
+                {
+                    if (i == 0)
+                    {
+                        // Allocates space on the stack
+                        username = reinterpret_cast<char *>(alloca(strlen(tok)));
+                        // Copies the string, including the  '\0'
+                        memcpy(username, tok, strlen(tok) + 1);
+                    } else if (i == 1)
+                    {
+                        // Allocates space on the stack
+                        domain = reinterpret_cast<char *>(alloca(strlen(tok)));
+                        // Copies the string, including the  '\0'
+                        memcpy(domain, tok, strlen(tok) + 1);
+                    } else break;
+
+                    // Finds the next token
+                    tok = strtok(nullptr, "@");
+                    i++; // Increments i
+                }
+
+                // Checks if the parsing went good, if not return server error
+                if (username == nullptr || domain == nullptr)
+                {
+                    // Generates server error
+                    const char *message = serverCommand::gen(471, "could not parse address ..");
+
+                    // Sends the server error
+                    write(soc, message, strlen(message));
+
+                    // Returns that there was an error
+                    return false;
+                }
+
+                // Finds the receiver on our server
+                models::UserQuickAccess userQuickAccess;
+                int rc = models::UserQuickAccess::selectByDomainAndUsername(cassSession, domain, username,
+                        userQuickAccess);
+
+                // Checks if the user was found
+                if (rc == -1)
+                {
+                    // Generates the response message
+                    const char *message = serverCommand::gen(471, "Could not perform cassandra query ..");
+
+                    // Writes the message
+                    write(soc, message, strlen(message));
+
+                    // Returns false
+                    return false;
+                } else if (rc == -2)
+                {
+                    // Generates the response message
+                    const char *message = serverCommand::gen(551, "");
+
+                    // Writes the message
+                    write(soc, message, strlen(message));
+
+                    // Returns false
+                    return false;
+                }
+
+                // Sets the user id to the email user id
+                email.m_UserUUID = userQuickAccess.u_Uuid;
+
+
+                // Sends continue
+                preContextProceed(soc);
+
+                // Sets the phase
+                phase = ConnPhasePT::PHASE_PT_MAIL_TO;
+
+                // Returns, everything went fine
+                return true;
             }
         };
     };

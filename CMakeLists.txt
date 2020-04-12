@@ -3,6 +3,12 @@ project(fsmtp_server)
 
 set(CMAKE_CXX_STANDARD 20)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+
+include_directories(${GTK3_INCLUDE_DIRS})
+LINK_DIRECTORIES(${GTK3_LIBRARY_DIRS})
+
 add_library(
         models STATIC
 
@@ -38,7 +44,8 @@ add_library(
         src/parsers/mail-parser.src.hpp
         src/server/responses.src.hpp
         src/pre.hpp
+        src/gui-gtk/main-window.src.hpp
 )
 
 add_executable(fsmtp_server main.cpp)
-target_link_libraries(fsmtp_server server db logger models -lpthread -lcassandra -lssl -lcrypto)
+target_link_libraries(fsmtp_server server db logger models -lpthread -lcassandra -lssl -lcrypto ${GTK3_LIBRARIES})

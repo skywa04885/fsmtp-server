@@ -243,6 +243,10 @@ namespace serverCommand
                 break;
             }
         }
+
+        // Adds the CR LF
+        strcat(result, "\r\n");
+
         // Returns the result
         return const_cast<const char *>(result);
     }
