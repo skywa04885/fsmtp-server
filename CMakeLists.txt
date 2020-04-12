@@ -36,6 +36,7 @@ add_library(
         src/server/server.src.cpp
         src/parsers/mail-parser.src.cpp
         src/parsers/mail-parser.src.hpp
+        src/server/responses.src.hpp
         src/pre.hpp
 )
 

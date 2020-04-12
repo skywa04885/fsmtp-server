@@ -6,6 +6,7 @@
  */
 
 #include "server.src.hpp"
+#include "./responses.src.hpp"
 
 namespace server
 {
@@ -310,22 +311,7 @@ namespace server
             {
                 // Client introduces
                 case serverCommand::SMTPServerCommand::HELLO: {
-                    // Checks if action is valid
-                    if (connPhasePt >= ConnPhasePT::PHASE_PT_INITIAL)
-                    {
-                        // Generates the response
-                        std::string temp = std::string(inet_ntoa(params.client->sin_addr)) + " nice to meet you!";
-                        response = serverCommand::generate(250, temp.c_str());
-                        // Sends the response
-                        sendMessage(params.clientSocket, response, print);
-                        // Updates the phase
-                        connPhasePt = ConnPhasePT::PHASE_PT_HELLO;
-                        // Breaks
-                        break;
-                    }
-                    // Sends the message that action is not allowed
-                    sendInvalidOrderError(params.clientSocket, "idk, initialize ?", print);
-                    // Breaks
+                    responses::plain::handleHelo(params.clientSocket, currentCommandArgs, connPhasePt, params);
                     break;
                 }
                 // Client requests exit

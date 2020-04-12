@@ -174,4 +174,76 @@ namespace serverCommand
         // Returns the result
         return result.str();
     }
+
+    /**
+     * Generates response message including code
+     * @param code
+     * @param param
+     * @return
+     */
+    const char *gen(int code, const char *param)
+    {
+        // Creates the result stream with the number
+        char *result = reinterpret_cast<char *>(malloc(sizeof(char) * (strlen(param) + 80)));
+
+        // Result: Code + WS
+        sprintf(result, "%d ", code);
+
+        // Checks what should be appended
+        switch (code)
+        {
+            // Introduction
+            case 220: {
+                strcat(result, param);
+                strcat(result, " ");
+                strcat(result, "SMTP - Fannst SMTP Server");
+                break;
+            };
+            // Continue, param based
+            case 250: {
+                strcat(result, param);
+                break;
+            }
+            // Data intro
+            case 354: {
+                strcat(result, "End data with <CR><LF>.<CR><LF>");
+                break;
+            }
+            // Exit requested
+            case 221: {
+                strcat(result, "Bye");
+                break;
+            }
+            // Syntax error
+            case 501: {
+                strcat(result, "Syntax error, goodbye !");
+                break;
+            }
+            // Bad sequence
+            case 503: {
+                strcat(result ,"Bad sequence, send ");
+                strcat(result, param);
+                strcat(result," first");
+                break;
+            }
+            // Mail server error
+            case 471: {
+                strcat(result, "Mail server error, ");
+                strcat(result, param);
+                break;
+            }
+            // User not found
+            case 551: {
+                strcat(result, "User not local");
+                break;
+            }
+            // Programmer messed up
+            default: {
+                strcat(result, "Server does not recognize current code");
+                break;
+            }
+        }
+        // Returns the result
+        return const_cast<const char *>(result);
+    }
 };
