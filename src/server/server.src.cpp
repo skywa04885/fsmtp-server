@@ -28,7 +28,8 @@ namespace server
         // Initializes required modules
         // ----
 
-        OPENSSL_init();
+        SSL_load_error_strings();
+        OpenSSL_add_ssl_algorithms();
 
         // ----
         // Initializes the server socket
@@ -138,6 +139,12 @@ namespace server
             std::thread thread(connectionThread, params);
             thread.detach();
         }
+
+        // ----
+        // Cleans up the stuff
+        // ----
+
+        EVP_cleanup();
     }
 
     void sendMessage(const int *socket, std::string& message, logger::Console& print)
@@ -388,11 +395,23 @@ namespace server
             {
                 // Client introduces
                 case serverCommand::SMTPServerCommand::HELLO: {
-                    if (!responses::plain::handleHelo(params.clientSocket, currentCommandArgs,
-                            connPhasePt, params)) {
-                        err = true;
-                        goto end;
-                    };
+                    // Checks how to write the response
+                    if (!usingSSL)
+                    {
+                        if (!responses::plain::handleHelo(params.clientSocket, currentCommandArgs,
+                                connPhasePt, params)) {
+                            err = true;
+                            goto end;
+                        };
+                    } else
+                    {
+                        if (!responses::tls::handleHelo(ssl, currentCommandArgs,
+                                connPhasePt, params)) {
+                            err = true;
+                            goto end;
+                        };
+                    }
+
                     break;
                 }
 
@@ -424,7 +443,6 @@ namespace server
 
                 // Handles 'START TLS'
                 case serverCommand::SMTPServerCommand::START_TLS: {
-                    std::cout << "Test" << std::endl;
                     // Writes the message
                     const char *message = serverCommand::gen(220, "Go ahead");
                     responses::plain::write(params.clientSocket, message, strlen(message));
@@ -468,7 +486,11 @@ namespace server
 
                     // Resets the state
                     connPhasePt = ConnPhasePT::PHASE_PT_INITIAL;
+                    
+                    // Sets using ssl to true
+                    usingSSL = true;
 
+                    // Breaks
                     break;
                 }
 
@@ -513,6 +535,9 @@ namespace server
             // to avoid memory leaks
             delete params.clientSocket;
             delete params.client;
+            SSL_shutdown(ssl);
+            SSL_free(ssl);
+            SSL_CTX_free(sslCtx);
 
             // Makes thread available
             _usedThreads--;

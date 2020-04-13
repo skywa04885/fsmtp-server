@@ -131,6 +131,26 @@ namespace server
                 // Returns, everything went fine
                 return true;
             }
+
+            bool handleHelo(SSL *ssl, const std::string &args, ConnPhasePT &phase, ConnectionThreadParams &params)
+            {
+                // Generates the message, I'm using the C string, because it just is faster.
+                char temp[80];
+                temp[0] = '\0';
+                strcat(temp, inet_ntoa(params.client->sin_addr));
+                strcat(temp, " nice to meet you !");
+
+                // Sends the response message
+                const char *message = serverCommand::gen(250, temp);
+                write(ssl, message, strlen(message));
+                delete message;
+
+                // Updates the phase
+                phase = ConnPhasePT::PHASE_PT_HELLO;
+
+                // Returns true
+                return true;
+            }
         };
 
         /**
