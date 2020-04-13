@@ -6,6 +6,7 @@
  */
 
 #include <fcntl.h>
+#include <fannst_libcompose.hpp>
 #include "server.src.hpp"
 #include "./responses.src.hpp"
 
@@ -274,8 +275,7 @@ namespace server
             const char *message = serverCommand::gen(220, "smtp.fannst.nl");
 
             // Writes the message
-            responses::plain::write(params.clientSocket, message, strlen(message));
-
+            responses::write(params.clientSocket, nullptr, message, strlen(message));
         }
 
         // ----
@@ -324,8 +324,11 @@ namespace server
             memset(buffer, 0, sizeof(buffer));
             sBuffer.clear();
 
-            // Waits for data to be transmitted
-            readLen = recv(*params.clientSocket, buffer, sizeof(char) * 1024, 0);
+            // Checks how we need to read
+            if (!usingSSL)
+                readLen = recv(*params.clientSocket, &buffer[0], 1024, 0);
+            else
+                readLen = SSL_read(ssl, &buffer[0], 1024);
 
             // Checks if there was data received
             if (readLen <= 0)
@@ -347,15 +350,15 @@ namespace server
             { // Should handle message body
                 dataBuffer.append(sBuffer);
                 // Checks if it contains the message end
-                if (sBuffer.find("\r\n.\r\n") != std::string::npos)
+                if (dataBuffer.substr(dataBuffer.length() - 10, dataBuffer.length()).find("\r\n.\r\n") != std::string::npos)
                 {
                     // Sets the status
                     connPhasePt = ConnPhasePT::PHASE_PT_DATA_END;
 
-                    // Generates the response
-                    response = serverCommand::generate(250, "Ok: message received ;)");
                     // Sends the response
-                    sendMessage(params.clientSocket, response, print);
+                    const char *message = serverCommand::gen(250, "Ok: message received ;)");
+                    responses::write(params.clientSocket, ssl, message, strlen(message));
+                    delete message;
 
                     // Parses the message
                     parsers::parseMime(dataBuffer, result);
@@ -373,9 +376,12 @@ namespace server
                     cass_uuid_gen_time(uuidGen, &result.m_UUID);
                     cass_uuid_gen_free(uuidGen);
 
+                    // Sets the receive params
+                    result.m_FullHeaders.push_back(models::EmailHeader{"X-FN-TransportType", usingSSL ? "START TLS" : "Plain Text"});
+                    result.m_FullHeaders.push_back(models::EmailHeader{"X-FN-ServerVersion", "FSMTP 1.0"});
+
                     // Saves the email
-//                    result.save(connection.c_Session);
-                    std::cout << result << std::endl;
+                    result.save(connection.c_Session);
 
                     // Continues
                     continue;
@@ -395,21 +401,10 @@ namespace server
             {
                 // Client introduces
                 case serverCommand::SMTPServerCommand::HELLO: {
-                    // Checks how to write the response
-                    if (!usingSSL)
-                    {
-                        if (!responses::plain::handleHelo(params.clientSocket, currentCommandArgs,
-                                connPhasePt, params)) {
-                            err = true;
-                            goto end;
-                        };
-                    } else
-                    {
-                        if (!responses::tls::handleHelo(ssl, currentCommandArgs,
-                                connPhasePt, params)) {
-                            err = true;
-                            goto end;
-                        };
+                    if (!responses::handleHelo(params.clientSocket, ssl, currentCommandArgs,
+                            connPhasePt, params)) {
+                        err = true;
+                        goto end;
                     }
 
                     break;
@@ -417,23 +412,24 @@ namespace server
 
                 // Client requests exit
                 case serverCommand::SMTPServerCommand::QUIT: {
-                    responses::plain::handleQuit(params.clientSocket);
+                    responses::handleQuit(params.clientSocket, ssl);
                     goto end;
                 }
 
                 // Handles 'MAIL_FROM'
                 case serverCommand::SMTPServerCommand::MAIL_FROM: {
-                    if (!responses::plain::handleMailFrom(params.clientSocket, currentCommandArgs,
+                    if (!responses::handleMailFrom(params.clientSocket, ssl, currentCommandArgs,
                             result, connPhasePt)) {
                         err = true;
                         goto end;
-                    };
+                    }
+
                     break;
                 }
 
                 // Handles 'RCPT TO'
                 case serverCommand::SMTPServerCommand::RCPT_TO: {
-                    if (!responses::plain::handleRcptTo(params.clientSocket, currentCommandArgs, result,
+                    if (!responses::handleRcptTo(params.clientSocket, ssl, currentCommandArgs, result,
                             connPhasePt, connection.c_Session)) {
                         err = true;
                         goto end;
@@ -443,9 +439,11 @@ namespace server
 
                 // Handles 'START TLS'
                 case serverCommand::SMTPServerCommand::START_TLS: {
+                    DEBUG_ONLY(print << "Client requested TLS connection" << logger::ConsoleOptions::ENDL)
+
                     // Writes the message
                     const char *message = serverCommand::gen(220, "Go ahead");
-                    responses::plain::write(params.clientSocket, message, strlen(message));
+                    responses::write(params.clientSocket, ssl, message, strlen(message));
 
                     // ----
                     // Initializes OpenSSL
@@ -490,6 +488,8 @@ namespace server
                     // Sets using ssl to true
                     usingSSL = true;
 
+                    DEBUG_ONLY(print << "TLS connection initialized" << logger::ConsoleOptions::ENDL)
+
                     // Breaks
                     break;
                 }
@@ -499,24 +499,26 @@ namespace server
                     // Checks if the command is allowed
                     if (connPhasePt >= ConnPhasePT::PHASE_PT_MAIL_TO)
                     {
-                        // Generates the response
-                        response = serverCommand::generate(354, "");
                         // Sends the response
-                        sendMessage(params.clientSocket, response, print);
-                        // Sets the phase
+                        const char *message = serverCommand::gen(354, "");
+                        responses::write(params.clientSocket, ssl, message, strlen(message));
                         connPhasePt = ConnPhasePT::PHASE_PT_DATA;
+                        delete message;
+
                         // Breaks
                         break;
                     }
+
                     // Sends the message that action is not allowed
-                    sendInvalidOrderError(params.clientSocket, "RCPT TO", print);
+                    responses::preContextBadSequence(params.clientSocket, ssl, "RCPT TO");
+
                     // Breaks
                     break;
                 }
 
                 // Command not found
                 default: {
-                    responses::plain::syntaxError(params.clientSocket);
+                    responses::syntaxError(params.clientSocket, ssl);
                     err = true;
                     goto end;
                 }
