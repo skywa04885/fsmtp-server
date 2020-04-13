@@ -126,18 +126,11 @@ namespace server
                 logger::ConsoleOptions::ENDL)
             // Copies the current variables
             // into a separate memory location
-            int *clientSocketP = reinterpret_cast<int *>(malloc(sizeof(int)));
-            memcpy(clientSocketP, &clientSocket, sizeof(int));
             auto *clientP = reinterpret_cast<struct sockaddr_in *>(malloc(sizeof(sockaddr_in)));
             memcpy(clientP, &client, sizeof(sockaddr_in));
-            // Creates the thread parameters
-            const ConnectionThreadParams params{
-                clientSocketP,
-                clientP
-            };
 
             // Creates the thread
-            std::thread thread(connectionThread, params);
+            std::thread thread(connectionThread, clientP, clientSocket);
             thread.detach();
         }
 
@@ -202,7 +195,7 @@ namespace server
      * Method used for single thread
      * @param params
      */
-    void connectionThread(ConnectionThreadParams params)
+    void connectionThread(struct sockaddr_in *sockaddrIn, int sock_fd)
     {
         _usedThreads++;             // Reserves one thread, in global atomic
 
@@ -213,7 +206,7 @@ namespace server
         #ifdef DEBUG
         // Creates the logger prefix, with the remote address
         std::string printPrefix("(");
-        printPrefix.append(inet_ntoa(params.client->sin_addr));
+        printPrefix.append(inet_ntoa(sockaddrIn->sin_addr));
         printPrefix.append(") Client@Server");
 
         // Prints the result
@@ -250,7 +243,7 @@ namespace server
             const char *message = serverCommand::gen(220, "smtp.fannst.nl", nullptr, 0);
 
             // Writes the message
-            responses::write(params.clientSocket, nullptr, message, strlen(message));
+            responses::write(&sock_fd, nullptr, message, strlen(message));
         }
 
         // ----
@@ -264,7 +257,7 @@ namespace server
         // ----
 
         serverCommand::SMTPServerCommand currentCommand;
-        std::string currentCommandArgs;
+        const char *currentCommandArgs;
         std::string sMessageBuffer;
         std::string dataBuffer;
         std::string response;
@@ -307,7 +300,7 @@ namespace server
             // Reads the data
             // ----
 
-            if (!usingSSL) readLen = recv(*params.clientSocket, &buffer[0], 1024, 0);
+            if (!usingSSL) readLen = recv(sock_fd, &buffer[0], 1024, 0);
             else readLen = SSL_read(ssl, &buffer[0], 1024);
 
 
@@ -349,7 +342,7 @@ namespace server
 
                     // Sends the response
                     const char *message = serverCommand::gen(250, "OK: Message received by Fannst", nullptr, 0);
-                    responses::write(params.clientSocket, ssl, message, strlen(message));
+                    responses::write(&sock_fd, ssl, message, strlen(message));
                     delete message;
 
                     // Parses the message
@@ -395,8 +388,8 @@ namespace server
             {
                 // Client introduces
                 case serverCommand::SMTPServerCommand::HELLO: {
-                    if (!responses::handleHelo(params.clientSocket, ssl, currentCommandArgs,
-                            connPhasePt, params)) {
+                    if (!responses::handleHelo(&sock_fd, ssl, currentCommandArgs,
+                            connPhasePt, sockaddrIn)) {
                         err = true;
                         goto end;
                     }
@@ -406,13 +399,13 @@ namespace server
 
                 // Client requests exit
                 case serverCommand::SMTPServerCommand::QUIT: {
-                    responses::handleQuit(params.clientSocket, ssl);
+                    responses::handleQuit(&sock_fd, ssl);
                     goto end;
                 }
 
                 // Handles 'MAIL_FROM'
                 case serverCommand::SMTPServerCommand::MAIL_FROM: {
-                    if (!responses::handleMailFrom(params.clientSocket, ssl, currentCommandArgs,
+                    if (!responses::handleMailFrom(&sock_fd, ssl, currentCommandArgs,
                             result, connPhasePt)) {
                         err = true;
                         goto end;
@@ -423,7 +416,7 @@ namespace server
 
                 // Handles 'RCPT TO'
                 case serverCommand::SMTPServerCommand::RCPT_TO: {
-                    if (!responses::handleRcptTo(params.clientSocket, ssl, currentCommandArgs, result,
+                    if (!responses::handleRcptTo(&sock_fd, ssl, currentCommandArgs, result,
                             connPhasePt, connection.c_Session)) {
                         err = true;
                         goto end;
@@ -437,7 +430,7 @@ namespace server
 
                     // Writes the message
                     const char *message = serverCommand::gen(250, "Go ahead", nullptr, 0);
-                    responses::write(params.clientSocket, ssl, message, strlen(message));
+                    responses::write(&sock_fd, ssl, message, strlen(message));
                     delete message;
 
                     // ----
@@ -468,7 +461,7 @@ namespace server
                     ssl = SSL_new(sslCtx);
 
                     // Sets the socket file descriptor
-                    SSL_set_fd(ssl, *params.clientSocket);
+                    SSL_set_fd(ssl, sock_fd);
 
                     // Starts the SSL connection
                     if (SSL_accept(ssl) <= 0)
@@ -479,7 +472,7 @@ namespace server
 
                     // Resets the state
                     connPhasePt = ConnPhasePT::PHASE_PT_INITIAL;
-                    
+
                     // Sets using ssl to true
                     usingSSL = true;
 
@@ -496,7 +489,7 @@ namespace server
                     {
                         // Sends the response
                         const char *message = serverCommand::gen(354, "", nullptr, 0);
-                        responses::write(params.clientSocket, ssl, message, strlen(message));
+                        responses::write(&sock_fd, ssl, message, strlen(message));
                         connPhasePt = ConnPhasePT::PHASE_PT_DATA;
                         delete message;
 
@@ -505,7 +498,7 @@ namespace server
                     }
 
                     // Sends the message that action is not allowed
-                    responses::preContextBadSequence(params.clientSocket, ssl, "RCPT TO");
+                    responses::preContextBadSequence(&sock_fd, ssl, "RCPT TO");
 
                     // Breaks
                     break;
@@ -515,7 +508,7 @@ namespace server
 
                 // Command not found
                 default: {
-                    responses::syntaxError(params.clientSocket, ssl);
+                    responses::syntaxError(&sock_fd, ssl);
                     err = true;
                     goto end;
                 }
@@ -527,20 +520,19 @@ namespace server
         // ----
 
         end:
-            // Closes the socket
-            shutdown(*params.clientSocket, SHUT_RDWR);
-
-            // Deletes the params,
-            // to avoid memory leaks
-            delete params.clientSocket;
-            delete params.client;
-
+            // If required free memory
             if (ssl != nullptr)
             {
                 SSL_shutdown(ssl);
                 SSL_free(ssl);
                 SSL_CTX_free(sslCtx);
             }
+
+            // Closes the socket
+            shutdown(sock_fd, SHUT_RDWR);
+
+            // Deletes the sockaddrIn
+            delete sockaddrIn;
 
             // Makes thread available
             _usedThreads--;

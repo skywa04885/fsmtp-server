@@ -27,7 +27,7 @@ namespace serverCommand
         HELP
     } SMTPServerCommand;
 
-    std::tuple<SMTPServerCommand, std::string> parse(char *buf);
+    std::tuple<SMTPServerCommand, const char *> parse(char *buf);
 
     const char *gen(int code, const char *param, const char *listParams[], char listParamsN);
 

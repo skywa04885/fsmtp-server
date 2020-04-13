@@ -60,7 +60,7 @@ namespace server
 
     int run(const unsigned int& port, int *argc, char ***argv);
 
-    void connectionThread(ConnectionThreadParams params);
+    void connectionThread(struct sockaddr_in *sockaddrIn, int sock_fd);
 
     void sendMessage(const int *socket, std::string& message, logger::Console& print);
 };

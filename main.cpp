@@ -7,6 +7,8 @@
 #include "src/email.src.hpp"
 #include "src/logger.src.hpp"
 #include "openssl/ssl.h"
+#include "src/server/commands.src.hpp"
+#include "src/parsers/mail-parser.src.hpp"
 
 int main(int argc, char **argv) {
     //Runs the server

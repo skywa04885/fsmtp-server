@@ -83,7 +83,7 @@ namespace server
         // The request handlers
         // ----
 
-        bool handleMailFrom(int *soc, SSL *ssl, const std::string &args, models::Email &email, ConnPhasePT &phase)
+        bool handleMailFrom(int *soc, SSL *ssl, const char *args, models::Email &email, ConnPhasePT &phase)
         {
             // Checks if the sequence is correct
             if (phase < ConnPhasePT::PHASE_PT_HELLO)
@@ -95,7 +95,7 @@ namespace server
             }
 
             // Checks if the args are empty, if so return syntax error
-            if (args.empty())
+            if (args == nullptr || strlen(args) == 0)
             {
                 // Writes the syntax error
                 syntaxError(soc, ssl);
@@ -112,9 +112,6 @@ namespace server
                 return false;
             }
 
-            // Prints to the console
-            std::cout << "Email receiving from: " << args << std::endl;
-
             // Checks if the sender is a person from Fannst, and possibly tries to relay message
             // TODO: Relay check
 
@@ -128,13 +125,13 @@ namespace server
             return true;
         }
 
-        bool handleHelo(int *soc, SSL *ssl, const std::string &args, ConnPhasePT &phase, ConnectionThreadParams &params)
+        bool handleHelo(int *soc, SSL *ssl, const char *args, ConnPhasePT &phase, struct sockaddr_in *sockaddrIn)
         {
             // ----
             // Checks if args are there
             // ----
 
-            if (args.empty())
+            if (args == nullptr || strlen(args) == 0)
             {
                 // Sends the response
                 const char *message = serverCommand::gen(501, "Empty EHLO/HELO command not allowed, closing connection.", nullptr, 0);
@@ -152,7 +149,7 @@ namespace server
             char *temp = reinterpret_cast<char *>(malloc(64));
             temp[0] = '\0';
             strcat(&temp[0], "smtp.fannst.nl at your service, [");
-            strcat(&temp[0], inet_ntoa(params.client->sin_addr));
+            strcat(&temp[0], inet_ntoa(sockaddrIn->sin_addr));
             strcat(&temp[0], "]");
 
             // ----
@@ -179,7 +176,7 @@ namespace server
             delete message;
         }
 
-        bool handleRcptTo(int *soc, SSL *ssl, const std::string &args, models::Email &email, ConnPhasePT &phase,
+        bool handleRcptTo(int *soc, SSL *ssl, const char *args, models::Email &email, ConnPhasePT &phase,
                           CassSession *cassSession)
         {
             // Checks if the sequence is correct
@@ -192,7 +189,7 @@ namespace server
             }
 
             // Checks if the arguments are empty
-            if (args.empty())
+            if (args == nullptr || strlen(args) == 0)
             {
                 // Writes an syntax error
                 syntaxError(soc, ssl);
@@ -273,7 +270,7 @@ namespace server
             // Finds the receiver on our server
             models::UserQuickAccess userQuickAccess;
             int rc = models::UserQuickAccess::selectByDomainAndUsername(cassSession, domain, username,
-                                                                        userQuickAccess);
+                    userQuickAccess);
 
             // Checks if the user was found
             if (rc == -1)

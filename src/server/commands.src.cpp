@@ -9,92 +9,122 @@
 
 namespace serverCommand
 {
-    std::tuple<SMTPServerCommand, std::string> parse(char *buf)
+    std::tuple<SMTPServerCommand, const char *> parse(char *buf)
     {
-        /*
-        // The current argument
-        std::string argumentResult;
-        // The current command
-        SMTPServerCommand commandResult = SMTPServerCommand::INVALID;
-        // The char buffer
-        const char *cBuffer = buffer.c_str();
-        // Checks the first char to speed stuff up
-        if (cBuffer[0] == 'M')
-        { // First letter is: M
-            if (buffer.substr(0, 9).compare("MAIL FROM") == 0)
-            { // Command: MAIL FROM
-                commandResult = SMTPServerCommand::MAIL_FROM;
-            }
-        } else if (cBuffer[0] == 'R')
-        { // First letter is: R
-            if (buffer.substr(0, 7).compare("RCPT TO") == 0)
-            { // Command: RCPT TO
-                commandResult = SMTPServerCommand::RCPT_TO;
-            }
-        } else if (cBuffer[0] == 'D')
-        { // First letter is: D
-            if (buffer.substr(0, 4).compare("DATA") == 0)
-            { // Command: DATA
-                commandResult = SMTPServerCommand::DATA;
-            }
-        } else if (cBuffer[0] == 'S')
-        { // First letter is: D
-            if (buffer.substr(0, 8).compare("STARTTLS") == 0)
-            { // Command: STARTTLS
-                commandResult = SMTPServerCommand::START_TLS;
-            }
-        } else if (cBuffer[0] == 'H')
-        { // First letter is: H
-            if (buffer.substr(0, 4).compare("HELO") == 0)
-            { // Command: HELO
-                commandResult = SMTPServerCommand::HELLO;
-            } else if (buffer.substr(0, 4).compare("HELP") == 0)
-            { // Command: HELP
-                commandResult = SMTPServerCommand::HELP;
-            }
-        } else if (cBuffer[0] == 'E')
-        { // First letter is: H
-            if (buffer.substr(0, 4).compare("EHLO") == 0)
-            { // Command: EHLO
-                commandResult = SMTPServerCommand::HELLO;
-            }
-        } else if (cBuffer[0] == 'Q')
-        { // First letter is: X
-            if (buffer.substr(0, 4).compare("QUIT") == 0) { // Command: RCPT TO
-                commandResult = SMTPServerCommand::QUIT;
-            }
-        }
+        serverCommand::SMTPServerCommand commandResult = serverCommand::INVALID;
 
-        // Checks if the arguments should be parsed
-        if (commandResult == SMTPServerCommand::HELLO || commandResult == SMTPServerCommand::MAIL_FROM || commandResult == SMTPServerCommand::RCPT_TO)
+        // ----
+        // Checks which command it is
+        // ----
+
+        char *temp = reinterpret_cast<char *>(malloc(9));
+        int commandLen = 0;
+        if (buf[0] == 'H' || buf[0] == 'E')
         {
-            // Parses the arguments
-            int argumentStart = buffer.find_first_of(":");
-            // Checks if there is an argument
-            if (argumentStart != std::string::npos)
+            // Copies the memory
+            memcpy(&temp[0], &buf[0], 4);
+            temp[4] = '\0';
+
+            // Checks what it is
+            if (strcmp(&temp[0], "EHLO") == 0 || strcmp(&temp[0], "HELO") == 0)
             {
-                argumentStart++;
-                // Gets the specific part of the buffer,
-                // and removes the \r\n
-                std::string arguments = buffer.substr(argumentStart, buffer.length() - argumentStart - 2);
-                // Sets the result
-                argumentResult = arguments;
-            } else if (commandResult == SMTPServerCommand::HELLO) {
-                // Gets the arguments string,
-                // and removes the \r\n
-                std::string arguments = buffer.substr(5, buffer.length() - 5 - 2);
-                // Sets the result
-                argumentResult = arguments;
+                commandResult = serverCommand::HELLO;
+                commandLen = 4;
+            } else if (strcmp(&temp[0], "HELP") == 0)
+            {
+                commandResult = serverCommand::HELP;
+                commandLen = 4;
+            }
+        } else if (buf[0] == 'D')
+        {
+            // Copies the memory
+            memcpy(&temp[0], &buf[0], 4);
+            temp[4] = '\0';
+
+            // Checks what it is
+            if (strcmp(&temp[0], "DATA") == 0)
+            {
+                commandResult = SMTPServerCommand::DATA;
+                commandLen = 4;
+            }
+        } else if (buf[0] == 'M')
+        {
+            // Copies the memory
+            memcpy(&temp[0], &buf[0], 9);
+            temp[9] = '\0';
+
+            // Checks what it is
+            if (strcmp(&temp[0], "MAIL FROM") == 0)
+            {
+                commandResult = SMTPServerCommand::MAIL_FROM;
+                commandLen = 9;
+            }
+        } else if (buf[0] == 'R')
+        {
+            // Copies the memory
+            memcpy(&temp[0], &buf[0], 7);
+            temp[7] = '\0';
+
+            // Checks what it is
+            if (strcmp(&temp[0], "RCPT TO") == 0)
+            {
+                commandResult = SMTPServerCommand::RCPT_TO;
+                commandLen = 7;
+            }
+        } else if (buf[0] == 'Q')
+        {
+            // Copies the memory
+            memcpy(&temp[0], &buf[0], 4);
+            temp[4] = '\0';
+
+            // Checks what it is
+            if (strcmp(&temp[0], "QUIT") == 0)
+            {
+                commandResult = SMTPServerCommand::QUIT;
+                commandLen = 4;
+            }
+        } else if (buf[0] == 'S')
+        {
+            // Copies the memory
+            memcpy(&temp[0], &buf[0], 8);
+            temp[8] = '\0';
+
+            // Checks what it is
+            if (strcmp(&temp[0], "STARTTLS") == 0)
+            {
+                commandResult = SMTPServerCommand::START_TLS;
+                commandLen = 8;
             }
         }
+        // Free's the memory
+        delete temp;
+        // Checks if there are arguments
+        if (buf[commandLen] == ':' || commandResult == SMTPServerCommand::HELLO) {
+            // Gets the total amount of bytes to copy
+            unsigned long total2copy = strlen(&buf[0]) - commandLen - 2;
 
-         */
+            // Reserves space for the memory
+            char *arguments = reinterpret_cast<char *>(malloc(total2copy));
 
-        std::string argumentResult;
-        serverCommand::
+            // Copies the memory
+            memcpy(&arguments[0], &buf[commandLen], total2copy);
+            arguments[total2copy] = '\0';
 
-        // Returns the command
-        return std::make_tuple(commandResult, argumentResult);
+            // ----
+            // Prepares the arguments for usage
+            // ----
+
+            // Removes the ':'
+            if (arguments[0] == ':') memmove(&arguments[0], &arguments[1], strlen(&arguments[0]));
+
+            // Checks if there is whitespace which needs to be removed
+            if (arguments[0] == ' ') memmove(&arguments[0], &arguments[1], strlen(&arguments[0]));
+
+            return std::make_tuple(commandResult, reinterpret_cast<const char *>(arguments));
+        } else
+        { // No arguments
+            return std::make_tuple(commandResult, nullptr);
+        }
     }
 
     const char *serverCommandToString(const SMTPServerCommand& command)
