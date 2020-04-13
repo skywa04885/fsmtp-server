@@ -183,7 +183,7 @@ namespace server
     int sslConfigureContexLoadPassword(char *buffer, int size, int rwflag, void *u)
     {
         // Opens the file, with reading mode
-        FILE *file = fopen("../keys/ssl/pp.txt", "r");
+        FILE *file = fopen("../keys/ssl/pp.pem", "r");
         if (file == nullptr)
         {
             // TODO: Handle file error

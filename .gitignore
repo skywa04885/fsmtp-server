@@ -1,6 +1,4 @@
 cmake-build-debug
 *.o
 *.out
-keys/ssl/pp.txt
-keys/ssl/cert.pem
-keys/ssl/key.pem
+/keys/
