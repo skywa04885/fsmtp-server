@@ -51,7 +51,7 @@ namespace server
          */
         void preContextProceed(int *soc, SSL *ssl)
         {
-            const char *message = serverCommand::gen(250, "OK Proceed");
+            const char *message = serverCommand::gen(250, "OK Proceed", nullptr, 0);
             write(soc, ssl, message, strlen(message));
             delete message;
         }
@@ -63,7 +63,7 @@ namespace server
          */
         void preContextBadSequence(int *soc, SSL *ssl, const char *reqMsg)
         {
-            const char *message = serverCommand::gen(503, reqMsg);
+            const char *message = serverCommand::gen(503, reqMsg, nullptr, 0);
             write(soc, ssl, message, strlen(message));
             delete message;
         }
@@ -74,7 +74,7 @@ namespace server
          */
         void syntaxError(int *soc, SSL *ssl)
         {
-            const char *message = serverCommand::gen(501, "");
+            const char *message = serverCommand::gen(501, "", nullptr, 0);
             write(soc, ssl, message, strlen(message));
             delete message;
         }
@@ -130,14 +130,37 @@ namespace server
 
         bool handleHelo(int *soc, SSL *ssl, const std::string &args, ConnPhasePT &phase, ConnectionThreadParams &params)
         {
-            // Generates the message, I'm using the C string, because it just is faster.
-            char temp[80];
-            temp[0] = '\0';
-            strcat(temp, inet_ntoa(params.client->sin_addr));
-            strcat(temp, " nice to meet you !");
+            // ----
+            // Checks if args are there
+            // ----
 
-            // Sends the response message
-            const char *message = serverCommand::gen(250, temp);
+            if (args.empty())
+            {
+                // Sends the response
+                const char *message = serverCommand::gen(501, "Empty EHLO/HELO command not allowed, closing connection.", nullptr, 0);
+                write(soc, ssl, message, strlen(message));
+                delete message;
+
+                // Closes the connection
+                return false;
+            }
+
+            // ----
+            // Generates the message title
+            // ----
+
+            char *temp = reinterpret_cast<char *>(malloc(64));
+            temp[0] = '\0';
+            strcat(&temp[0], "smtp.fannst.nl at your service, [");
+            strcat(&temp[0], inet_ntoa(params.client->sin_addr));
+            strcat(&temp[0], "]");
+
+            // ----
+            // Sends the message
+            // ----
+
+            const char *argList[] {"STARTTLS", "HELP"};
+            const char *message = serverCommand::gen(250, &temp[0], argList, 2);
             write(soc, ssl, message, strlen(message));
             delete message;
 
@@ -151,7 +174,7 @@ namespace server
         void handleQuit(int *soc, SSL *ssl)
         {
             // Sends the response message
-            const char *message = serverCommand::gen(221, "");
+            const char *message = serverCommand::gen(221, "", nullptr, 0);
             write(soc, ssl, message, strlen(message));
             delete message;
         }
@@ -165,7 +188,7 @@ namespace server
                 // Writes the error
                 preContextBadSequence(soc, ssl, "MAIL FROM");
                 // Returns false
-                return false;
+                return true;
             }
 
             // Checks if the arguments are empty
@@ -198,7 +221,8 @@ namespace server
                 PREP_ERROR("Refused parsing", "Address longer then 256 chars, preventing stack overflow ..")
 
                 // Sends the error message
-                const char *message = serverCommand::gen(471, "Address too large, would cause stack overflow ..");
+                const char *message = serverCommand::gen(471,
+                        "Address too large, would cause stack overflow ..", nullptr, 0);
                 write(soc, ssl, message, strlen(message));
                 delete message;
 
@@ -233,7 +257,8 @@ namespace server
             if (username == nullptr || domain == nullptr)
             {
                 // Sends the response message
-                const char *message = serverCommand::gen(471, "could not parse address ..");
+                const char *message = serverCommand::gen(471, "could not parse address ..",
+                        nullptr, 0);
                 write(soc, ssl, message, strlen(message));
                 delete message;
 
@@ -254,7 +279,8 @@ namespace server
             if (rc == -1)
             {
                 // Sends the response message
-                const char *message = serverCommand::gen(471, "Could not perform cassandra query ..");
+                const char *message = serverCommand::gen(471, "Could not perform cassandra query ..",
+                        nullptr, 0);
                 write(soc, ssl, message, strlen(message));
                 delete message;
 
@@ -263,7 +289,7 @@ namespace server
             } else if (rc == -2)
             {
                 // Sends the response message
-                const char *message = serverCommand::gen(551, "");
+                const char *message = serverCommand::gen(551, "", nullptr, 0);
                 write(soc, ssl, message, strlen(message));
                 delete message;
 

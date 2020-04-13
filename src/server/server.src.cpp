@@ -148,31 +148,6 @@ namespace server
         EVP_cleanup();
     }
 
-    void sendMessage(const int *socket, std::string& message, logger::Console& print)
-    {
-        DEBUG_ONLY(print << "Transmitting message [ Message: " << message << " ]." << logger::ConsoleOptions::ENDL)
-        // Appends the newline characters
-        message.append("\r\n");
-        // Sends the message
-        if (send(*socket, message.c_str(), message.length(), 0) < 0)
-        {
-            // Sets the print level to error
-            DEBUG_ONLY(print.setLevel(logger::Level::LOGGER_ERROR))
-            // Prints the error
-            DEBUG_ONLY(print << "Could not send message [ Message: " << message << " ]." << logger::ConsoleOptions::ENDL)
-            // Sets the print level to info
-            DEBUG_ONLY(print.setLevel(logger::Level::LOGGER_INFO))
-        }
-    }
-
-    void sendInvalidOrderError(const int *socket, const char *param, logger::Console& print)
-    {
-        // Generates the response
-        std::string response = serverCommand::generate(503, param);
-        // Sends the response
-        sendMessage(socket, response, print);
-    }
-
     /**
      * Reads passphrase file for OpenSSL Sockets
      * @param buffer
@@ -272,7 +247,7 @@ namespace server
 
         {
             // Generates the message
-            const char *message = serverCommand::gen(220, "smtp.fannst.nl");
+            const char *message = serverCommand::gen(220, "smtp.fannst.nl", nullptr, 0);
 
             // Writes the message
             responses::write(params.clientSocket, nullptr, message, strlen(message));
@@ -320,17 +295,26 @@ namespace server
 
         for (;;)
         {
-            // Clears the buffer
+            // ----
+            // Prepares the buffers
+            // ----
+
             memset(buffer, 0, sizeof(buffer));
             sBuffer.clear();
 
-            // Checks how we need to read
-            if (!usingSSL)
-                readLen = recv(*params.clientSocket, &buffer[0], 1024, 0);
-            else
-                readLen = SSL_read(ssl, &buffer[0], 1024);
 
-            // Checks if there was data received
+            // ----
+            // Reads the data
+            // ----
+
+            if (!usingSSL) readLen = recv(*params.clientSocket, &buffer[0], 1024, 0);
+            else readLen = SSL_read(ssl, &buffer[0], 1024);
+
+
+            // ----
+            // Checks if there went something wrong
+            // ----
+
             if (readLen <= 0)
             {
                 #ifdef DEBUG
@@ -345,18 +329,26 @@ namespace server
             // Assigns the sBuffer an string
             sBuffer = buffer;
 
-            // Checks if data os currently being handled
+            // ----
+            // Checks if there is data being handled, if so append to buffer
+            // ----
+
             if (connPhasePt == ConnPhasePT::PHASE_PT_DATA)
             { // Should handle message body
                 dataBuffer.append(sBuffer);
                 // Checks if it contains the message end
-                if (dataBuffer.substr(dataBuffer.length() - 10, dataBuffer.length()).find("\r\n.\r\n") != std::string::npos)
+                std::size_t id = std::string::npos;
+                if (dataBuffer.length() > 11)
+                {
+                    id = dataBuffer.substr(dataBuffer.length() - 10, dataBuffer.length()).find("\r\n.\r\n");
+                }
+                if (id != std::string::npos)
                 {
                     // Sets the status
                     connPhasePt = ConnPhasePT::PHASE_PT_DATA_END;
 
                     // Sends the response
-                    const char *message = serverCommand::gen(250, "Ok: message received ;)");
+                    const char *message = serverCommand::gen(250, "OK: Message received by Fannst", nullptr, 0);
                     responses::write(params.clientSocket, ssl, message, strlen(message));
                     delete message;
 
@@ -371,7 +363,11 @@ namespace server
                     result.m_ReceiveTimestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
                             now.time_since_epoch()).count();
 
-                    // Creates an id for the message
+                    // ----
+                    // Finishes the email, and stores it
+                    // ----
+
+                    // Generates an UUID for the email
                     CassUuidGen *uuidGen = cass_uuid_gen_new();
                     cass_uuid_gen_time(uuidGen, &result.m_UUID);
                     cass_uuid_gen_free(uuidGen);
@@ -382,16 +378,14 @@ namespace server
 
                     // Saves the email
                     result.save(connection.c_Session);
-
-                    // Continues
                     continue;
                 }
-                // Continues
+
                 continue;
             }
 
             // Parses the current command
-            std::tie(currentCommand, currentCommandArgs) = serverCommand::parse(sBuffer);
+            std::tie(currentCommand, currentCommandArgs) = serverCommand::parse(&buffer[0]);
 
             // ----
             // Checks how the server should respond, and process the operation
@@ -442,8 +436,9 @@ namespace server
                     DEBUG_ONLY(print << "Client requested TLS connection" << logger::ConsoleOptions::ENDL)
 
                     // Writes the message
-                    const char *message = serverCommand::gen(220, "Go ahead");
+                    const char *message = serverCommand::gen(250, "Go ahead", nullptr, 0);
                     responses::write(params.clientSocket, ssl, message, strlen(message));
+                    delete message;
 
                     // ----
                     // Initializes OpenSSL
@@ -500,7 +495,7 @@ namespace server
                     if (connPhasePt >= ConnPhasePT::PHASE_PT_MAIL_TO)
                     {
                         // Sends the response
-                        const char *message = serverCommand::gen(354, "");
+                        const char *message = serverCommand::gen(354, "", nullptr, 0);
                         responses::write(params.clientSocket, ssl, message, strlen(message));
                         connPhasePt = ConnPhasePT::PHASE_PT_DATA;
                         delete message;
@@ -515,6 +510,8 @@ namespace server
                     // Breaks
                     break;
                 }
+
+                // The help command
 
                 // Command not found
                 default: {
@@ -537,9 +534,13 @@ namespace server
             // to avoid memory leaks
             delete params.clientSocket;
             delete params.client;
-            SSL_shutdown(ssl);
-            SSL_free(ssl);
-            SSL_CTX_free(sslCtx);
+
+            if (ssl != nullptr)
+            {
+                SSL_shutdown(ssl);
+                SSL_free(ssl);
+                SSL_CTX_free(sslCtx);
+            }
 
             // Makes thread available
             _usedThreads--;

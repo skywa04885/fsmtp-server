@@ -23,13 +23,13 @@ namespace serverCommand
         RCPT_TO,
         DATA,
         START_TLS,
-        QUIT
+        QUIT,
+        HELP
     } SMTPServerCommand;
 
-    std::tuple<SMTPServerCommand, std::string> parse(const std::string& buffer);
+    std::tuple<SMTPServerCommand, std::string> parse(char *buf);
 
-    std::string generate(int code, const char *param);
-    const char *gen(int code, const char *param);
+    const char *gen(int code, const char *param, const char *listParams[], char listParamsN);
 
     const char *serverCommandToString(const SMTPServerCommand& command);
 };
