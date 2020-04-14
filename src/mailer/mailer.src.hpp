@@ -8,6 +8,7 @@
 
 #include <fannst_libcompose.hpp>
 
+#include "../logger.src.hpp"
 #include "resolver.src.hpp"
 #include "commands.src.hpp"
 #include "socket-handler.hpp"

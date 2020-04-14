@@ -59,6 +59,13 @@ create type if not exists email_content_section (
     e_index int
 );
 
+-- Creates the queued email table
+create table if not exists queued_emails (
+    m_uuid uuid,
+    m_timestamp bigint,
+    primary key(m_uuid, m_timestamp)
+) with clustering order by(m_timestamp desc);
+
 -- Creates the email table
 create table if not exists inbox_emails (
     m_transport_to email_address,

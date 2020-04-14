@@ -5,8 +5,8 @@
  * Copyright: Free to use, without modifying
  */
 
-#include <fcntl.h>
 #include <fannst_libcompose.hpp>
+
 #include "server.src.hpp"
 #include "./responses.src.hpp"
 

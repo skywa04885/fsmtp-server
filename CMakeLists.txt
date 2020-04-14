@@ -43,8 +43,23 @@ add_library(
         src/parsers/mail-parser.src.cpp
         src/parsers/mail-parser.src.hpp
         src/server/responses.src.hpp
+        src/queued-email.src.cpp
+        src/queued-email.src.hpp
         src/pre.hpp
 )
 
+add_library(
+        mailer STATIC
+
+        src/mailer/mailer.src.cpp
+        src/mailer/mailer.src.hpp
+        src/mailer/resolver.src.hpp
+        src/mailer/resolver.src.cpp
+        src/mailer/commands.src.hpp
+        src/mailer/commands.src.cpp
+        src/mailer/socket-handler.cpp
+        src/mailer/socket-handler.hpp
+)
+
 add_executable(fsmtp_server main.cpp)
-target_link_libraries(fsmtp_server server db logger models -lpthread -lcassandra -lssl -lcrypto ${GTK3_LIBRARIES})
+target_link_libraries(fsmtp_server mailer server db logger models -lpthread -lfannst_libcompose -lfannst_libencoding -lcassandra -lresolv -lssl -lcrypto ${GTK3_LIBRARIES})

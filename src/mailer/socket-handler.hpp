@@ -11,7 +11,7 @@
 #include <openssl/err.h>
 #include <fannst_libcompose.hpp>
 
-#include "pre.hpp"
+#include "../pre.hpp"
 #include "commands.src.hpp"
 
 namespace Fannst::FSMTPClient::SocketHandler
@@ -36,7 +36,7 @@ namespace Fannst::FSMTPClient::SocketHandler
 
             // Checks if there were any errors
             if (rc < 0)
-                FSMT_PREP_ERROR("Plain Text Socket Error", "Could not read data")
+                PREP_ERROR("Plain Text Socket Error", "Could not read data")
         } else
         { // Using START TLS
 
@@ -46,12 +46,12 @@ namespace Fannst::FSMTPClient::SocketHandler
             // Checks if there were any errors
             if (rc <= 0)
             {
-                FSMT_PREP_ERROR("SSL Socket Error", "Could not read data")
+                PREP_ERROR("SSL Socket Error", "Could not read data")
                 ERR_print_errors_fp(stderr);
             }
         }
 
-        FSMTP_PREP_DEBUG_PRINT("Received from server", buf);
+        std::cout << "Received: " << buf << std::endl;
 
         // Returns the code
         return rc;
@@ -78,7 +78,7 @@ namespace Fannst::FSMTPClient::SocketHandler
 
             // Checks if there were any errors
             if (rc < 0)
-                FSMT_PREP_ERROR("Plain Text Socket Error", "Could not write data")
+                PREP_ERROR("Plain Text Socket Error", "Could not write data")
         } else
         { // Using Start TLS
 
@@ -88,12 +88,12 @@ namespace Fannst::FSMTPClient::SocketHandler
             // Checks if there were any errors
             if (rc <= 0)
             {
-                FSMT_PREP_ERROR("SSL Socket Error", "Could not write data")
+                PREP_ERROR("SSL Socket Error", "Could not write data")
                 ERR_print_errors_fp(stderr);
             }
         }
 
-        FSMTP_PREP_DEBUG_PRINT("Sent to server", buf);
+        std::cout << "Sent: " << buf << std::endl;
 
         // Returns the code
         return rc;

@@ -1,5 +1,4 @@
 #include "mailer.src.hpp"
-#include "pre.hpp"
 
 namespace Fannst
 {
@@ -45,6 +44,12 @@ namespace Fannst
         for (fannst::types::EmailAddress &address : this->c_ComposerOptions.o_To)
         {
             // ----
+            // Creates the logger if debug
+            // ----
+
+            DEBUG_ONLY(FSMTPServer::Logger::Console print(FSMTPServer::Logger::Level::LOGGER_DEBUG, "Mailer"))
+
+            // ----
             // Resolves the records
             // ----
 
@@ -78,6 +83,14 @@ namespace Fannst
             // Resolves the records
             mxRecords.clear();
             rc = Fannst::dns::resolveMX(domain, mxRecords);
+
+            #ifdef DEBUG
+            print << "Resolved records for " << domain << ": " << FSMTPServer::Logger::ConsoleOptions::ENDL;
+            for (auto &record : mxRecords)
+            {
+                std::cout << record << std::endl;
+            }
+            #endif
 
             // Checks if there went something wrong
             if (rc < 0)
@@ -144,7 +157,7 @@ namespace Fannst
         int rc, sock_fd;
 
         // Creates the server sock struct
-        server.sin_addr.s_addr = inet_addr("127.0.0.1");
+        server.sin_addr.s_addr = inet_addr(ipAddress);
         server.sin_port = htons(25);
         server.sin_family = AF_INET;
 
@@ -157,7 +170,7 @@ namespace Fannst
         if (sock_fd < 0)
         {
             // TODO: Handle error log
-            FSMT_PREP_ERROR("Socket Error", "Could not create socket")
+            PREP_ERROR("Socket Error", "Could not create socket")
             return -1;
         }
 
@@ -174,7 +187,7 @@ namespace Fannst
                            reinterpret_cast<char *>(&timeout), sizeof(timeout)) < 0
                 )
         {
-            FSMT_PREP_ERROR("Socket Error", "Could not set socket timeout")
+            PREP_ERROR("Socket Error", "Could not set socket timeout")
             return -1;
         }
 
@@ -184,7 +197,7 @@ namespace Fannst
 
         if (connect(sock_fd, reinterpret_cast<sockaddr *>(&server), sizeof(server)) < 0)
         {
-            FSMT_PREP_ERROR("Could not connect to server", ipAddress)
+            PREP_ERROR("Could not connect to server", ipAddress)
             return -2;
         }
 
@@ -293,7 +306,7 @@ namespace Fannst
                     sslCtx = SSL_CTX_new(sslMethod);
                     if (!sslCtx)
                     {
-                        FSMT_PREP_ERROR("OpenSSL Error", "Could not create context")
+                        PREP_ERROR("OpenSSL Error", "Could not create context")
                         ERR_print_errors_fp(stderr);
 
                         // Closes the socket
@@ -309,7 +322,7 @@ namespace Fannst
                     ssl = SSL_new(sslCtx);
                     if (!ssl)
                     {
-                        FSMT_PREP_ERROR("OpenSSL Error", "Could not create TLS")
+                        PREP_ERROR("OpenSSL Error", "Could not create TLS")
                         ERR_print_errors_fp(stderr);
 
                         // Closes the socket
@@ -323,7 +336,7 @@ namespace Fannst
                     // Connects the SSL socket
                     if (SSL_connect(ssl) <= 0)
                     {
-                        FSMT_PREP_ERROR("OpenSSL Error", "Could not connect TLS")
+                        PREP_ERROR("OpenSSL Error", "Could not connect TLS")
                         ERR_print_errors_fp(stderr);
 
                         // Closes the socket
