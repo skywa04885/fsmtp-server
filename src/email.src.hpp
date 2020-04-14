@@ -15,7 +15,7 @@
 
 #include <cassandra.h>
 
-namespace models
+namespace Fannst::FSMTPServer::Models
 {
     typedef enum {
         EMAIL_CT_MULTIPART_ALTERNATIVE,
@@ -75,15 +75,15 @@ namespace models
 };
 
 // Overloads the email content type enum
-inline std::ostream &operator << (std::ostream &out, models::EmailContentType const &data)
+inline std::ostream &operator << (std::ostream &out, Fannst::FSMTPServer::Models::EmailContentType const &data)
 {
     switch (data)
     {
-        case models::EmailContentType::EMAIL_CT_MULTIPART_ALTERNATIVE: {
+        case Fannst::FSMTPServer::Models::EmailContentType::EMAIL_CT_MULTIPART_ALTERNATIVE: {
             out << "Multipart Alternative ( Multiple sections, with different types )";
             break;
         }
-        case models::EmailContentType::EMAIL_CT_TEXT_PLAIN: {
+        case Fannst::FSMTPServer::Models::EmailContentType::EMAIL_CT_TEXT_PLAIN: {
             out << "Plain Text ( Single text only / markup language section )";
             break;
         }
@@ -92,15 +92,15 @@ inline std::ostream &operator << (std::ostream &out, models::EmailContentType co
 }
 
 // Overloads the email section type enum
-inline std::ostream &operator << (std::ostream &out, models::EmailContentSectionType const &data)
+inline std::ostream &operator << (std::ostream &out, Fannst::FSMTPServer::Models::EmailContentSectionType const &data)
 {
     switch (data)
     {
-        case models::EmailContentSectionType::EMAIL_CS_HTML: {
+        case Fannst::FSMTPServer::Models::EmailContentSectionType::EMAIL_CS_HTML: {
             out << "HTML ( Hyper Text Markup Language )";
             break;
         }
-        case models::EmailContentSectionType::EMAIL_CS_TEXT_PLAIN: {
+        case Fannst::FSMTPServer::Models::EmailContentSectionType::EMAIL_CS_TEXT_PLAIN: {
             out << "Plain Text";
             break;
         }
@@ -109,21 +109,21 @@ inline std::ostream &operator << (std::ostream &out, models::EmailContentSection
 }
 
 // Overloads the EmailAddress struct
-inline std::ostream &operator << (std::ostream &out, models::EmailAddress const &data)
+inline std::ostream &operator << (std::ostream &out, Fannst::FSMTPServer::Models::EmailAddress const &data)
 {
     out << (data.e_Name.empty() ? "Unknown" : data.e_Name) << " <" << data.e_Address << ">";
     return out;
 }
 
 // Overloads the EmailAddress struct
-inline std::ostream &operator << (std::ostream &out, models::EmailHeader const &data)
+inline std::ostream &operator << (std::ostream &out, Fannst::FSMTPServer::Models::EmailHeader const &data)
 {
     out << data.e_Key << ": " << data.e_Value;
     return out;
 }
 
 // operator overloads
-inline std::ostream &operator << (std::ostream &out, models::Email const &data)
+inline std::ostream &operator << (std::ostream &out, Fannst::FSMTPServer::Models::Email const &data)
 {
     // Appends the title
     out << "\033[34m[Email Instance]\033[0m:" << std::endl;

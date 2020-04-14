@@ -7,7 +7,7 @@
 
 #include "logger.src.hpp"
 
-namespace logger {
+namespace Fannst::FSMTPServer::Logger {
     Console::Console(const Level &c_Level, const char *c_Prefix) {
         this->c_Level = c_Level;
         this->c_Prefix = c_Prefix;

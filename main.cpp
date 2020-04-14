@@ -12,7 +12,7 @@
 
 int main(int argc, char **argv) {
     //Runs the server
-    server::run(25, &argc, &argv);
+    Fannst::FSMTPServer::Server::run(25, &argc, &argv);
     // Closes with code 0
     return 0;
 

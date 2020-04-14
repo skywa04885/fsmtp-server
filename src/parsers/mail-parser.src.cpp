@@ -7,7 +7,7 @@
 
 #include "mail-parser.src.hpp"
 
-namespace parsers
+namespace Fannst::FSMTPServer::Parsers
 {
     /*
 	 * 1. normWhitespace
@@ -68,7 +68,7 @@ namespace parsers
      * 3. parseAddress
      */
 
-    int parseAddress(const std::string& raw, models::EmailAddress& target)
+    int parseAddress(const std::string& raw, Models::EmailAddress& target)
     {
         std::string temp;
 
@@ -130,9 +130,9 @@ namespace parsers
      * 4. parseAddressList
      */
 
-    int parseAddressList(const std::string& raw, std::vector<models::EmailAddress>& target)
+    int parseAddressList(const std::string& raw, std::vector<Models::EmailAddress>& target)
     {
-        models::EmailAddress currentAddress;
+        Models::EmailAddress currentAddress;
         std::size_t current, previous = 0;
 
         // Gets the first , occurrence
@@ -179,7 +179,7 @@ namespace parsers
      * 5. ParseMime
      */
 
-    int parseMime(std::string& raw, models::Email& target)
+    int parseMime(std::string& raw, Models::Email& target)
     {
         /*
          * Splits the document up intro lines
@@ -335,7 +335,7 @@ namespace parsers
 
         // Checks if any of the headers
         // is usable
-        for (models::EmailHeader &header : target.m_FullHeaders)
+        for (Models::EmailHeader &header : target.m_FullHeaders)
         {
             if (header.e_Key[0] == 'S')
             {
@@ -381,16 +381,16 @@ namespace parsers
                             // Checks if the type is multipart/alternative
                             if (argument.compare("multipart/alternative") == 0)
                             {
-                                target.m_ContentType = models::EmailContentType::EMAIL_CT_MULTIPART_ALTERNATIVE;
+                                target.m_ContentType = Models::EmailContentType::EMAIL_CT_MULTIPART_ALTERNATIVE;
                             }
                         } else if (argument[0] == 't')
                         {
                             if (argument.compare("text/plain") == 0)
                             {
-                                target.m_ContentType = models::EmailContentType::EMAIL_CT_TEXT_PLAIN;
+                                target.m_ContentType = Models::EmailContentType::EMAIL_CT_TEXT_PLAIN;
                             } else if (argument.compare("text/html") == 0)
                             {
-                                target.m_ContentType = models::EmailContentType::EMAIL_CT_TEXT_HTML;
+                                target.m_ContentType = Models::EmailContentType::EMAIL_CT_TEXT_HTML;
                             }
                         } else
                         { // Is none of the existing, check if it is a key value type
@@ -433,7 +433,7 @@ namespace parsers
         }
 
         // Starts parsing the body, based on the specified type
-        if (target.m_ContentType == models::EmailContentType::EMAIL_CT_MULTIPART_ALTERNATIVE)
+        if (target.m_ContentType == Models::EmailContentType::EMAIL_CT_MULTIPART_ALTERNATIVE)
         { // Multiple content sections
             /*
              * 1. Split up into multiple sections inside vector, with
@@ -489,7 +489,7 @@ namespace parsers
 
                             // The section processing variables
                             bool headersEnded = false;
-                            models::EmailContentSection section;
+                            Models::EmailContentSection section;
 
                             /*
                              * Processes the current section
@@ -548,10 +548,10 @@ namespace parsers
                                             { // Argument starts with t
                                                 if (argument.substr(0, 10).compare("text/plain") == 0)
                                                 { // Argument is text/plain
-                                                    section.e_Type = models::EmailContentSectionType::EMAIL_CS_TEXT_PLAIN;
+                                                    section.e_Type = Models::EmailContentSectionType::EMAIL_CS_TEXT_PLAIN;
                                                 } else if (argument.substr(0, 9).compare("text/html") == 0)
                                                 { // Argument is text/html
-                                                    section.e_Type = models::EmailContentSectionType::EMAIL_CS_HTML;
+                                                    section.e_Type = Models::EmailContentSectionType::EMAIL_CS_HTML;
                                                 }
                                             }
                                         }
@@ -583,10 +583,10 @@ namespace parsers
                 // Increments the section to
                 sectionTo++;
             }
-        } else if (target.m_ContentType == models::EmailContentType::EMAIL_CT_TEXT_PLAIN)
+        } else if (target.m_ContentType == Models::EmailContentType::EMAIL_CT_TEXT_PLAIN)
         { // Content type plain text / markup language
 
-        } else if (target.m_ContentType == models::EmailContentType::EMAIL_CT_TEXT_HTML)
+        } else if (target.m_ContentType == Models::EmailContentType::EMAIL_CT_TEXT_HTML)
         { // Basic html content
 
         }
@@ -656,7 +656,7 @@ namespace parsers
      * 8. ParseMime
      */
 
-    int parseHeader(std::string &raw, std::vector<models::EmailHeader>& headers)
+    int parseHeader(std::string &raw, std::vector<Models::EmailHeader>& headers)
     {
         /*
          * 1. Check if header contains :
@@ -671,7 +671,7 @@ namespace parsers
         if (pos == std::string::npos) return -1;
 
         // Creates the header result
-        models::EmailHeader header;
+        Models::EmailHeader header;
 
         // Splits the header
         header.e_Key = raw.substr(0, pos);

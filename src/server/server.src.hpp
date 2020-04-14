@@ -30,7 +30,7 @@
 
 #define MAX_THREADS 6
 
-namespace server
+namespace Fannst::FSMTPServer::Server
 {
     typedef struct {
         int *clientSocket;
@@ -62,5 +62,5 @@ namespace server
 
     void connectionThread(struct sockaddr_in *sockaddrIn, int sock_fd);
 
-    void sendMessage(const int *socket, std::string& message, logger::Console& print);
+    void sendMessage(const int *socket, std::string& message, Logger::Console& print);
 };

@@ -7,7 +7,7 @@
 
 #include "cassandra.src.hpp"
 
-namespace cassandra
+namespace Fannst::FSMTPServer::Cassandra
 {
 
     Connection::Connection(const char *c_Hosts, bool& success):

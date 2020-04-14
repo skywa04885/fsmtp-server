@@ -7,11 +7,16 @@
 
 #include "commands.src.hpp"
 
-namespace serverCommand
+namespace Fannst::FSMTPServer::ServerCommand
 {
+    /**
+     * Parses an mailer to server command
+     * @param buf
+     * @return
+     */
     std::tuple<SMTPServerCommand, const char *> parse(char *buf)
     {
-        serverCommand::SMTPServerCommand commandResult = serverCommand::INVALID;
+        ServerCommand::SMTPServerCommand commandResult = SMTPServerCommand::INVALID;
 
         // ----
         // Checks which command it is
@@ -28,11 +33,11 @@ namespace serverCommand
             // Checks what it is
             if (strcmp(&temp[0], "EHLO") == 0 || strcmp(&temp[0], "HELO") == 0)
             {
-                commandResult = serverCommand::HELLO;
+                commandResult = SMTPServerCommand::HELLO;
                 commandLen = 4;
             } else if (strcmp(&temp[0], "HELP") == 0)
             {
-                commandResult = serverCommand::HELP;
+                commandResult = ServerCommand::SMTPServerCommand::HELP;
                 commandLen = 4;
             }
         } else if (buf[0] == 'D')
@@ -127,6 +132,11 @@ namespace serverCommand
         }
     }
 
+    /**
+     * Converts command enum to string
+     * @param command
+     * @return
+     */
     const char *serverCommandToString(const SMTPServerCommand& command)
     {
         switch (command)
@@ -156,9 +166,11 @@ namespace serverCommand
     }
 
     /**
-     * Generates response message including code
+     * Generates an response with code
      * @param code
      * @param param
+     * @param listParams
+     * @param listParamsN
      * @return
      */
     const char *gen(int code, const char *param, const char *listParams[], char listParamsN)

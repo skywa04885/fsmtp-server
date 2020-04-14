@@ -8,7 +8,7 @@
 #include "email.src.hpp"
 #include "db/cassandra.src.hpp"
 
-namespace models
+namespace Fannst::FSMTPServer::Models
 {
     int Email::save(CassSession *session) {
         // Generates the bukket
@@ -28,7 +28,7 @@ namespace models
         /**
          * 1. Initializes the types
          */
-
+        
         // Initializes the variables
         const CassDataType *udt_email_address;
         const CassDataType *udt_email_content_section;

@@ -14,7 +14,7 @@
 #include <tuple>
 #include <memory.h>
 
-namespace serverCommand
+namespace Fannst::FSMTPServer::ServerCommand
 {
     typedef enum {
         INVALID,
@@ -27,9 +27,27 @@ namespace serverCommand
         HELP
     } SMTPServerCommand;
 
+    /**
+     * Parses an mailer to server command
+     * @param buf
+     * @return
+     */
     std::tuple<SMTPServerCommand, const char *> parse(char *buf);
 
+    /**
+     * Generates an response with code
+     * @param code
+     * @param param
+     * @param listParams
+     * @param listParamsN
+     * @return
+     */
     const char *gen(int code, const char *param, const char *listParams[], char listParamsN);
 
+    /**
+     * Converts command enum to string
+     * @param command
+     * @return
+     */
     const char *serverCommandToString(const SMTPServerCommand& command);
 };

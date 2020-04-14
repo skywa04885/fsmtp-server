@@ -12,7 +12,7 @@
 #include "../logger.src.hpp"
 #include "../pre.hpp"
 
-namespace cassandra
+namespace Fannst::FSMTPServer::Cassandra
 {
     class Connection
     {

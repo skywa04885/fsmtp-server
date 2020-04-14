@@ -51,7 +51,7 @@
  * - Parses an header
  */
 
-namespace parsers
+namespace Fannst::FSMTPServer::Parsers
 {
     /*
      * 1. rpfWhitespace
@@ -69,19 +69,19 @@ namespace parsers
      * 3. parseAddress
      */
 
-    int parseAddress(const std::string& raw, models::EmailAddress& target);
+    int parseAddress(const std::string& raw, Models::EmailAddress& target);
 
     /*
      * 4. parseAddressList
      */
 
-    int parseAddressList(const std::string& raw, std::vector<models::EmailAddress>& target);
+    int parseAddressList(const std::string& raw, std::vector<Models::EmailAddress>& target);
 
     /*
      * 5. parseMime
      */
 
-    int parseMime(std::string& raw, models::Email& target);
+    int parseMime(std::string& raw, Models::Email& target);
 
     /*
      * 6. parseHeaderArgumentsValue
@@ -99,5 +99,5 @@ namespace parsers
      * 8. parseHeader
      */
 
-    int parseHeader(std::string &raw, std::vector<models::EmailHeader>& headers);
+    int parseHeader(std::string &raw, std::vector<Models::EmailHeader>& headers);
 };

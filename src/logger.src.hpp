@@ -11,7 +11,7 @@
 #include <string>
 #include <sstream>
 
-namespace logger
+namespace Fannst::FSMTPServer::Logger
 {
     // This enum holds a logger level,
     // this means the color, and label

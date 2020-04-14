@@ -8,7 +8,7 @@
 #include "user.src.hpp"
 #include "db/cassandra.src.hpp"
 
-namespace models
+namespace Fannst::FSMTPServer::Models
 {
     User::User(
         const std::string &u_FullName,

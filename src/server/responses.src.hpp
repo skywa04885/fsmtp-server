@@ -17,294 +17,298 @@
 #include "server.src.hpp"
 #include "../user.src.hpp"
 
-namespace server
+namespace Fannst::FSMTPServer::Responses
 {
-    namespace responses
+    // ----
+    // The global methods, such as write
+    // ----
+
+    /**
+     * Writes an message to an encrypted socket or plain text socket
+     * @param soc
+     * @param ssl
+     * @param msg
+     * @param msg_len
+     */
+    void write(const int *soc, SSL *ssl, const char *msg, int msg_len)
+    {
+        if (ssl == nullptr)
+        {
+            if (send(*soc, msg, msg_len, 0) < 0) {
+                PREP_ERROR("Could not send message", msg)
+            }
+        } else
+        {
+            // Sends the message over the socket
+            SSL_write(ssl, msg, msg_len);
+
+            // TODO: Check for errors
+        }
+    }
+
+    // ----
+    // The pre-programmed responses
+    // ----
+
+    /**
+     * Sends that the mailer may continue
+     * @param ssl
+     */
+    void preContextProceed(int *soc, SSL *ssl)
+    {
+        const char *message = ServerCommand::gen(250, "OK Proceed", nullptr, 0);
+        write(soc, ssl, message, strlen(message));
+        delete message;
+    }
+
+    /**
+     * Sends that an bad sequence occurred
+     * @param ssl
+     * @param reqMsg
+     */
+    void preContextBadSequence(int *soc, SSL *ssl, const char *reqMsg)
+    {
+        const char *message = ServerCommand::gen(503, reqMsg, nullptr, 0);
+        write(soc, ssl, message, strlen(message));
+        delete message;
+    }
+
+    /**
+     * Sends an syntax error
+     * @param ssl
+     */
+    void syntaxError(int *soc, SSL *ssl)
+    {
+        const char *message = ServerCommand::gen(501, "", nullptr, 0);
+        write(soc, ssl, message, strlen(message));
+        delete message;
+    }
+
+    // ----
+    // The request handlers
+    // ----
+
+    bool handleMailFrom(int *soc, SSL *ssl, const char *args, Models::Email &email, Server::ConnPhasePT &phase)
+    {
+        // Checks if the sequence is correct
+        if (phase < Server::ConnPhasePT::PHASE_PT_HELLO)
+        {
+            // Writes the error
+            preContextBadSequence(soc, ssl, "HELO");
+            // Returns true, so mailer can retry
+            return true;
+        }
+
+        // Checks if the args are empty, if so return syntax error
+        if (args == nullptr || strlen(args) == 0)
+        {
+            // Writes the syntax error
+            syntaxError(soc, ssl);
+            // Returns false, close connection
+            return false;
+        }
+
+        // Parses the email address from the args, if invalid: send syntax error
+        if (Parsers::parseAddress(args, email.m_TransportFrom) < 0)
+        {
+            // Writes the syntax error
+            syntaxError(soc, ssl);
+            // Returns false, close connection
+            return false;
+        }
+
+        // Checks if the sender is a person from Fannst, and possibly tries to relay message
+        // TODO: Relay check
+
+        // Sends continue
+        preContextProceed(soc, ssl);
+
+        // Sets the phase
+        phase = Server::ConnPhasePT::PHASE_PT_MAIL_FROM;
+
+        // Returns, everything went fine
+        return true;
+    }
+
+    bool handleHelo(int *soc, SSL *ssl, const char *args, Server::ConnPhasePT &phase, struct sockaddr_in *sockaddrIn)
     {
         // ----
-        // The global methods, such as write
+        // Checks if args are there
         // ----
 
-        void write(const int *soc, SSL *ssl, const char *msg, int msg_len)
+        if (args == nullptr || strlen(args) == 0)
         {
-            if (ssl == nullptr)
-            {
-                if (send(*soc, msg, msg_len, 0) < 0) {
-                    PREP_ERROR("Could not send message", msg)
-                }
-            } else
-            {
-                // Sends the message over the socket
-                SSL_write(ssl, msg, msg_len);
-
-                // TODO: Check for errors
-            }
-        }
-
-        // ----
-        // The pre-programmed responses
-        // ----
-
-        /**
-         * Sends that the client may continue
-         * @param ssl
-         */
-        void preContextProceed(int *soc, SSL *ssl)
-        {
-            const char *message = serverCommand::gen(250, "OK Proceed", nullptr, 0);
+            // Sends the response
+            const char *message = ServerCommand::gen(501, "Empty EHLO/HELO command not allowed, closing connection.", nullptr, 0);
             write(soc, ssl, message, strlen(message));
             delete message;
-        }
 
-        /**
-         * Sends that an bad sequence occurred
-         * @param ssl
-         * @param reqMsg
-         */
-        void preContextBadSequence(int *soc, SSL *ssl, const char *reqMsg)
-        {
-            const char *message = serverCommand::gen(503, reqMsg, nullptr, 0);
-            write(soc, ssl, message, strlen(message));
-            delete message;
-        }
-
-        /**
-         * Sends an syntax error
-         * @param ssl
-         */
-        void syntaxError(int *soc, SSL *ssl)
-        {
-            const char *message = serverCommand::gen(501, "", nullptr, 0);
-            write(soc, ssl, message, strlen(message));
-            delete message;
+            // Closes the connection
+            return false;
         }
 
         // ----
-        // The request handlers
+        // Generates the message title
         // ----
 
-        bool handleMailFrom(int *soc, SSL *ssl, const char *args, models::Email &email, ConnPhasePT &phase)
+        char *temp = reinterpret_cast<char *>(malloc(64));
+        temp[0] = '\0';
+        strcat(&temp[0], "smtp.fannst.nl at your service, [");
+        strcat(&temp[0], inet_ntoa(sockaddrIn->sin_addr));
+        strcat(&temp[0], "]");
+
+        // ----
+        // Sends the message
+        // ----
+
+        const char *argList[] {"STARTTLS", "HELP"};
+        const char *message = ServerCommand::gen(250, &temp[0], argList, 2);
+        write(soc, ssl, message, strlen(message));
+        delete message;
+
+        // Updates the phase
+        phase = Server::ConnPhasePT::PHASE_PT_HELLO;
+
+        // Returns true
+        return true;
+    }
+
+    void handleQuit(int *soc, SSL *ssl)
+    {
+        // Sends the response message
+        const char *message = ServerCommand::gen(221, "", nullptr, 0);
+        write(soc, ssl, message, strlen(message));
+        delete message;
+    }
+
+    bool handleRcptTo(int *soc, SSL *ssl, const char *args, Models::Email &email, Server::ConnPhasePT &phase,
+                      CassSession *cassSession)
+    {
+        // Checks if the sequence is correct
+        if (phase < Server::ConnPhasePT::PHASE_PT_MAIL_FROM)
         {
-            // Checks if the sequence is correct
-            if (phase < ConnPhasePT::PHASE_PT_HELLO)
-            {
-                // Writes the error
-                preContextBadSequence(soc, ssl, "HELO");
-                // Returns true, so client can retry
-                return true;
-            }
-
-            // Checks if the args are empty, if so return syntax error
-            if (args == nullptr || strlen(args) == 0)
-            {
-                // Writes the syntax error
-                syntaxError(soc, ssl);
-                // Returns false, close connection
-                return false;
-            }
-
-            // Parses the email address from the args, if invalid: send syntax error
-            if (parsers::parseAddress(args, email.m_TransportFrom) < 0)
-            {
-                // Writes the syntax error
-                syntaxError(soc, ssl);
-                // Returns false, close connection
-                return false;
-            }
-
-            // Checks if the sender is a person from Fannst, and possibly tries to relay message
-            // TODO: Relay check
-
-            // Sends continue
-            preContextProceed(soc, ssl);
-
-            // Sets the phase
-            phase = ConnPhasePT::PHASE_PT_MAIL_FROM;
-
-            // Returns, everything went fine
+            // Writes the error
+            preContextBadSequence(soc, ssl, "MAIL FROM");
+            // Returns false
             return true;
         }
 
-        bool handleHelo(int *soc, SSL *ssl, const char *args, ConnPhasePT &phase, struct sockaddr_in *sockaddrIn)
+        // Checks if the arguments are empty
+        if (args == nullptr || strlen(args) == 0)
         {
-            // ----
-            // Checks if args are there
-            // ----
+            // Writes an syntax error
+            syntaxError(soc, ssl);
+            // Returns false
+            return false;
+        }
 
-            if (args == nullptr || strlen(args) == 0)
-            {
-                // Sends the response
-                const char *message = serverCommand::gen(501, "Empty EHLO/HELO command not allowed, closing connection.", nullptr, 0);
-                write(soc, ssl, message, strlen(message));
-                delete message;
+        // Parses the address
+        if (Parsers::parseAddress(args, email.m_TransportTo) < 0)
+        {
+            // Writes the syntax error
+            syntaxError(soc, ssl);
+            // Returns false, close connection
+            return false;
+        }
 
-                // Closes the connection
-                return false;
-            }
+        // Splits the address
+        char *emailCstr = const_cast<char *>(email.m_TransportTo.e_Address.c_str());
+        char *username = nullptr;
+        char *domain = nullptr;
+        char *tok = strtok(emailCstr, "@");
 
-            // ----
-            // Generates the message title
-            // ----
+        // Checks if the string is too long, and if we need to stop
+        if (strlen(emailCstr) > 256)
+        {
+            PREP_ERROR("Refused parsing", "Address longer then 256 chars, preventing stack overflow ..")
 
-            char *temp = reinterpret_cast<char *>(malloc(64));
-            temp[0] = '\0';
-            strcat(&temp[0], "smtp.fannst.nl at your service, [");
-            strcat(&temp[0], inet_ntoa(sockaddrIn->sin_addr));
-            strcat(&temp[0], "]");
-
-            // ----
-            // Sends the message
-            // ----
-
-            const char *argList[] {"STARTTLS", "HELP"};
-            const char *message = serverCommand::gen(250, &temp[0], argList, 2);
+            // Sends the error message
+            const char *message = ServerCommand::gen(471,
+                                                     "Address too large, would cause stack overflow ..", nullptr, 0);
             write(soc, ssl, message, strlen(message));
             delete message;
 
-            // Updates the phase
-            phase = ConnPhasePT::PHASE_PT_HELLO;
-
-            // Returns true
-            return true;
+            // Returns false
+            return false;
         }
 
-        void handleQuit(int *soc, SSL *ssl)
+        // Loop over the occurrences, char because of the small size
+        unsigned char i = 0;
+        while (tok != nullptr)
+        {
+            if (i == 0)
+            {
+                // Allocates space on the stack
+                username = reinterpret_cast<char *>(alloca(strlen(tok)));
+                // Copies the string, including the  '\0'
+                memcpy(username, tok, strlen(tok) + 1);
+            } else if (i == 1)
+            {
+                // Allocates space on the stack
+                domain = reinterpret_cast<char *>(alloca(strlen(tok)));
+                // Copies the string, including the  '\0'
+                memcpy(domain, tok, strlen(tok) + 1);
+            } else break;
+
+            // Finds the next token
+            tok = strtok(nullptr, "@");
+            i++; // Increments i
+        }
+
+        // Checks if the parsing went good, if not return server error
+        if (username == nullptr || domain == nullptr)
         {
             // Sends the response message
-            const char *message = serverCommand::gen(221, "", nullptr, 0);
+            const char *message = ServerCommand::gen(471, "could not parse address ..",
+                                                     nullptr, 0);
             write(soc, ssl, message, strlen(message));
             delete message;
+
+            // Returns that there was an error
+            return false;
         }
 
-        bool handleRcptTo(int *soc, SSL *ssl, const char *args, models::Email &email, ConnPhasePT &phase,
-                          CassSession *cassSession)
+        // ----
+        // Performs user check from Apache Cassandra
+        // ----
+
+        // Finds the receiver on our server
+        Models::UserQuickAccess userQuickAccess;
+        int rc = Models::UserQuickAccess::selectByDomainAndUsername(cassSession, domain, username,
+                userQuickAccess);
+
+        // Checks if the user was found
+        if (rc == -1)
         {
-            // Checks if the sequence is correct
-            if (phase < ConnPhasePT::PHASE_PT_MAIL_FROM)
-            {
-                // Writes the error
-                preContextBadSequence(soc, ssl, "MAIL FROM");
-                // Returns false
-                return true;
-            }
+            // Sends the response message
+            const char *message = ServerCommand::gen(471, "Could not perform cassandra query ..",
+                                                     nullptr, 0);
+            write(soc, ssl, message, strlen(message));
+            delete message;
 
-            // Checks if the arguments are empty
-            if (args == nullptr || strlen(args) == 0)
-            {
-                // Writes an syntax error
-                syntaxError(soc, ssl);
-                // Returns false
-                return false;
-            }
+            // Returns false
+            return false;
+        } else if (rc == -2)
+        {
+            // Sends the response message
+            const char *message = ServerCommand::gen(551, "", nullptr, 0);
+            write(soc, ssl, message, strlen(message));
+            delete message;
 
-            // Parses the address
-            if (parsers::parseAddress(args, email.m_TransportTo) < 0)
-            {
-                // Writes the syntax error
-                syntaxError(soc, ssl);
-                // Returns false, close connection
-                return false;
-            }
-
-            // Splits the address
-            char *emailCstr = const_cast<char *>(email.m_TransportTo.e_Address.c_str());
-            char *username = nullptr;
-            char *domain = nullptr;
-            char *tok = strtok(emailCstr, "@");
-
-            // Checks if the string is too long, and if we need to stop
-            if (strlen(emailCstr) > 256)
-            {
-                PREP_ERROR("Refused parsing", "Address longer then 256 chars, preventing stack overflow ..")
-
-                // Sends the error message
-                const char *message = serverCommand::gen(471,
-                        "Address too large, would cause stack overflow ..", nullptr, 0);
-                write(soc, ssl, message, strlen(message));
-                delete message;
-
-                // Returns false
-                return false;
-            }
-
-            // Loop over the occurrences, char because of the small size
-            unsigned char i = 0;
-            while (tok != nullptr)
-            {
-                if (i == 0)
-                {
-                    // Allocates space on the stack
-                    username = reinterpret_cast<char *>(alloca(strlen(tok)));
-                    // Copies the string, including the  '\0'
-                    memcpy(username, tok, strlen(tok) + 1);
-                } else if (i == 1)
-                {
-                    // Allocates space on the stack
-                    domain = reinterpret_cast<char *>(alloca(strlen(tok)));
-                    // Copies the string, including the  '\0'
-                    memcpy(domain, tok, strlen(tok) + 1);
-                } else break;
-
-                // Finds the next token
-                tok = strtok(nullptr, "@");
-                i++; // Increments i
-            }
-
-            // Checks if the parsing went good, if not return server error
-            if (username == nullptr || domain == nullptr)
-            {
-                // Sends the response message
-                const char *message = serverCommand::gen(471, "could not parse address ..",
-                        nullptr, 0);
-                write(soc, ssl, message, strlen(message));
-                delete message;
-
-                // Returns that there was an error
-                return false;
-            }
-
-            // ----
-            // Performs user check from Apache Cassandra
-            // ----
-
-            // Finds the receiver on our server
-            models::UserQuickAccess userQuickAccess;
-            int rc = models::UserQuickAccess::selectByDomainAndUsername(cassSession, domain, username,
-                    userQuickAccess);
-
-            // Checks if the user was found
-            if (rc == -1)
-            {
-                // Sends the response message
-                const char *message = serverCommand::gen(471, "Could not perform cassandra query ..",
-                        nullptr, 0);
-                write(soc, ssl, message, strlen(message));
-                delete message;
-
-                // Returns false
-                return false;
-            } else if (rc == -2)
-            {
-                // Sends the response message
-                const char *message = serverCommand::gen(551, "", nullptr, 0);
-                write(soc, ssl, message, strlen(message));
-                delete message;
-
-                // Returns false
-                return false;
-            }
-
-            // Sets the user id to the email user id
-            email.m_UserUUID = userQuickAccess.u_Uuid;
-
-            // Sends continue
-            preContextProceed(soc, ssl);
-
-            // Sets the phase
-            phase = ConnPhasePT::PHASE_PT_MAIL_TO;
-
-            // Returns, everything went fine
-            return true;
+            // Returns false
+            return false;
         }
-    };
-};
+
+        // Sets the user id to the email user id
+        email.m_UserUUID = userQuickAccess.u_Uuid;
+
+        // Sends continue
+        preContextProceed(soc, ssl);
+
+        // Sets the phase
+        phase = Server::ConnPhasePT::PHASE_PT_MAIL_TO;
+
+        // Returns, everything went fine
+        return true;
+    }
+}

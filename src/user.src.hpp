@@ -13,7 +13,7 @@
 
 #include <cassandra.h>
 
-namespace models
+namespace Fannst::FSMTPServer::Models
 {
     class User
     {

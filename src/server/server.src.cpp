@@ -10,7 +10,7 @@
 #include "server.src.hpp"
 #include "./responses.src.hpp"
 
-namespace server
+namespace Fannst::FSMTPServer::Server
 {
     std::atomic<int> _usedThreads(0);
     int _maxThreads = MAX_THREADS;
@@ -37,8 +37,8 @@ namespace server
         // ----
 
         // Creates the logger
-        DEBUG_ONLY(logger::Console print(logger::Level::LOGGER_INFO, "Run@Server"))
-        DEBUG_ONLY(print << "Made by Luke Rieff ;)" << logger::ConsoleOptions::ENDL)
+        DEBUG_ONLY(Logger::Console print(Logger::Level::LOGGER_INFO, "Run@Server"))
+        DEBUG_ONLY(print << "Made by Luke Rieff ;)" << Logger::ConsoleOptions::ENDL)
 
         // Creates the server struct
         struct sockaddr_in server{};
@@ -58,7 +58,7 @@ namespace server
         fcntl(serverSock, F_SETFL, O_NONBLOCK);
 
         // Prints that the socket has been created
-        DEBUG_ONLY(print << "Socket has been created." << logger::ConsoleOptions::ENDL)
+        DEBUG_ONLY(print << "Socket has been created." << Logger::ConsoleOptions::ENDL)
 
         // Sets the socket options
         int option = 1;
@@ -74,7 +74,7 @@ namespace server
         listen(serverSock, 40);
 
         // Prints that the socket is listening
-        DEBUG_ONLY(print << "FSMTP Listening on port " << port << "." << logger::ConsoleOptions::ENDL)
+        DEBUG_ONLY(print << "FSMTP Listening on port " << port << "." << Logger::ConsoleOptions::ENDL)
 
         // ----
         // Defines the required structures and sizes
@@ -96,10 +96,10 @@ namespace server
                 continue;
             }
 
-            // Accepts the client
+            // Accepts the mailer
             clientSocket = accept(serverSock, (struct sockaddr *)&client, (socklen_t *)&sockaddrSize);
 
-            // Checks if the client was successfully accepted
+            // Checks if the mailer was successfully accepted
             if (clientSocket < 0)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -121,9 +121,8 @@ namespace server
                 continue;
             }
 
-            // Assigns thread to client
-            DEBUG_ONLY(print << "Client " << inet_ntoa(client.sin_addr) << " initialized connection, assigning thread .." <<
-                logger::ConsoleOptions::ENDL)
+            // Assigns thread to mailer
+            DEBUG_ONLY(print << "Client " << inet_ntoa(client.sin_addr) << " initialized connection, assigning thread .." << Logger::ConsoleOptions::ENDL)
             // Copies the current variables
             // into a separate memory location
             auto *clientP = reinterpret_cast<struct sockaddr_in *>(malloc(sizeof(sockaddr_in)));
@@ -210,8 +209,8 @@ namespace server
         printPrefix.append(") Client@Server");
 
         // Prints the result
-        logger::Console print(logger::Level::LOGGER_INFO, printPrefix.c_str());
-        print << "Thread assigned successfully." << logger::ConsoleOptions::ENDL;
+        Logger::Console print(Logger::Level::LOGGER_INFO, printPrefix.c_str());
+        print << "Thread assigned successfully." << Logger::ConsoleOptions::ENDL;
         #endif
 
         // ----
@@ -219,19 +218,19 @@ namespace server
         // ----
 
         bool rb;
-        cassandra::Connection connection(GE_CASSANDRA_CONTACT_POINTS, rb);
+        Cassandra::Connection connection(GE_CASSANDRA_CONTACT_POINTS, rb);
 
         // Checks if the connection went successfully
         if (!rb)
         {
             #ifdef DEBUG
-            print.setLevel(logger::Level::LOGGER_FATAL);
-            print << "Could not connect to cassandra, may not work properly." << logger::ConsoleOptions::ENDL;
-            print.setLevel(logger::Level::LOGGER_INFO);
+            print.setLevel(Logger::Level::LOGGER_FATAL);
+            print << "Could not connect to cassandra, may not work properly." << Logger::ConsoleOptions::ENDL;
+            print.setLevel(Logger::Level::LOGGER_INFO);
             #endif
         } else
         {
-            DEBUG_ONLY(print << "Thread connected to DataStax Cassandra" << logger::ConsoleOptions::ENDL)
+            DEBUG_ONLY(print << "Thread connected to DataStax Cassandra" << Logger::ConsoleOptions::ENDL)
         }
 
         // ----
@@ -240,10 +239,10 @@ namespace server
 
         {
             // Generates the message
-            const char *message = serverCommand::gen(220, "smtp.fannst.nl", nullptr, 0);
+            const char *message = ServerCommand::gen(220, "smtp.fannst.nl", nullptr, 0);
 
             // Writes the message
-            responses::write(&sock_fd, nullptr, message, strlen(message));
+            Responses::write(&sock_fd, nullptr, message, strlen(message));
         }
 
         // ----
@@ -256,7 +255,7 @@ namespace server
         // The data storage, buffers etc
         // ----
 
-        serverCommand::SMTPServerCommand currentCommand;
+        ServerCommand::SMTPServerCommand currentCommand;
         const char *currentCommandArgs;
         std::string sMessageBuffer;
         std::string dataBuffer;
@@ -266,7 +265,7 @@ namespace server
         char buffer[1024];          // Kinda large buffer for storing commands, and message temp
         int readLen = 0;            // The amount of chars, read in the thread at specific moment
 
-        models::Email result;       // The result email
+        Models::Email result;       // The result email
 
         // ----
         // The connection status variables
@@ -311,8 +310,8 @@ namespace server
             if (readLen <= 0)
             {
                 #ifdef DEBUG
-                print.setLevel(logger::Level::LOGGER_WARNING);
-                print << "Client closed transmission channel, breaking." << logger::ConsoleOptions::ENDL;
+                print.setLevel(Logger::Level::LOGGER_WARNING);
+                print << "Client closed transmission channel, breaking." << Logger::ConsoleOptions::ENDL;
                 #endif
 
                 // Closes connection
@@ -341,12 +340,12 @@ namespace server
                     connPhasePt = ConnPhasePT::PHASE_PT_DATA_END;
 
                     // Sends the response
-                    const char *message = serverCommand::gen(250, "OK: Message received by Fannst", nullptr, 0);
-                    responses::write(&sock_fd, ssl, message, strlen(message));
+                    const char *message = ServerCommand::gen(250, "OK: Message received by Fannst", nullptr, 0);
+                    Responses::write(&sock_fd, ssl, message, strlen(message));
                     delete message;
 
                     // Parses the message
-                    parsers::parseMime(dataBuffer, result);
+                    Parsers::parseMime(dataBuffer, result);
 
                     // Sets normally empty values
                     result.m_Timestamp = 0;
@@ -366,8 +365,8 @@ namespace server
                     cass_uuid_gen_free(uuidGen);
 
                     // Sets the receive params
-                    result.m_FullHeaders.push_back(models::EmailHeader{"X-FN-TransportType", usingSSL ? "START TLS" : "Plain Text"});
-                    result.m_FullHeaders.push_back(models::EmailHeader{"X-FN-ServerVersion", "FSMTP 1.0"});
+                    result.m_FullHeaders.push_back(Models::EmailHeader{"X-FN-TransportType", usingSSL ? "START TLS" : "Plain Text"});
+                    result.m_FullHeaders.push_back(Models::EmailHeader{"X-FN-ServerVersion", "FSMTP 1.0"});
 
                     // Saves the email
                     result.save(connection.c_Session);
@@ -378,7 +377,7 @@ namespace server
             }
 
             // Parses the current command
-            std::tie(currentCommand, currentCommandArgs) = serverCommand::parse(&buffer[0]);
+            std::tie(currentCommand, currentCommandArgs) = ServerCommand::parse(&buffer[0]);
 
             // ----
             // Checks how the server should respond, and process the operation
@@ -387,8 +386,8 @@ namespace server
             switch (currentCommand)
             {
                 // Client introduces
-                case serverCommand::SMTPServerCommand::HELLO: {
-                    if (!responses::handleHelo(&sock_fd, ssl, currentCommandArgs,
+                case ServerCommand::SMTPServerCommand::HELLO: {
+                    if (!Responses::handleHelo(&sock_fd, ssl, currentCommandArgs,
                             connPhasePt, sockaddrIn)) {
                         err = true;
                         goto end;
@@ -398,14 +397,14 @@ namespace server
                 }
 
                 // Client requests exit
-                case serverCommand::SMTPServerCommand::QUIT: {
-                    responses::handleQuit(&sock_fd, ssl);
+                case ServerCommand::SMTPServerCommand::QUIT: {
+                    Responses::handleQuit(&sock_fd, ssl);
                     goto end;
                 }
 
                 // Handles 'MAIL_FROM'
-                case serverCommand::SMTPServerCommand::MAIL_FROM: {
-                    if (!responses::handleMailFrom(&sock_fd, ssl, currentCommandArgs,
+                case ServerCommand::SMTPServerCommand::MAIL_FROM: {
+                    if (!Responses::handleMailFrom(&sock_fd, ssl, currentCommandArgs,
                             result, connPhasePt)) {
                         err = true;
                         goto end;
@@ -415,8 +414,8 @@ namespace server
                 }
 
                 // Handles 'RCPT TO'
-                case serverCommand::SMTPServerCommand::RCPT_TO: {
-                    if (!responses::handleRcptTo(&sock_fd, ssl, currentCommandArgs, result,
+                case ServerCommand::SMTPServerCommand::RCPT_TO: {
+                    if (!Responses::handleRcptTo(&sock_fd, ssl, currentCommandArgs, result,
                             connPhasePt, connection.c_Session)) {
                         err = true;
                         goto end;
@@ -425,12 +424,12 @@ namespace server
                 }
 
                 // Handles 'START TLS'
-                case serverCommand::SMTPServerCommand::START_TLS: {
-                    DEBUG_ONLY(print << "Client requested TLS connection" << logger::ConsoleOptions::ENDL)
+                case ServerCommand::SMTPServerCommand::START_TLS: {
+                    DEBUG_ONLY(print << "Client requested TLS connection" << Logger::ConsoleOptions::ENDL)
 
                     // Writes the message
-                    const char *message = serverCommand::gen(250, "Go ahead", nullptr, 0);
-                    responses::write(&sock_fd, ssl, message, strlen(message));
+                    const char *message = ServerCommand::gen(250, "Go ahead", nullptr, 0);
+                    Responses::write(&sock_fd, ssl, message, strlen(message));
                     delete message;
 
                     // ----
@@ -466,7 +465,7 @@ namespace server
                     // Starts the SSL connection
                     if (SSL_accept(ssl) <= 0)
                     {
-                        PREP_ERROR("OpenSSL Error", "Could not accept client ..")
+                        PREP_ERROR("OpenSSL Error", "Could not accept mailer ..")
                         ERR_print_errors_fp(stderr);
                     }
 
@@ -476,20 +475,20 @@ namespace server
                     // Sets using ssl to true
                     usingSSL = true;
 
-                    DEBUG_ONLY(print << "TLS connection initialized" << logger::ConsoleOptions::ENDL)
+                    DEBUG_ONLY(print << "TLS connection initialized" << Logger::ConsoleOptions::ENDL)
 
                     // Breaks
                     break;
                 }
 
                 // The data section
-                case serverCommand::SMTPServerCommand::DATA: {
+                case ServerCommand::SMTPServerCommand::DATA: {
                     // Checks if the command is allowed
                     if (connPhasePt >= ConnPhasePT::PHASE_PT_MAIL_TO)
                     {
                         // Sends the response
-                        const char *message = serverCommand::gen(354, "", nullptr, 0);
-                        responses::write(&sock_fd, ssl, message, strlen(message));
+                        const char *message = ServerCommand::gen(354, "", nullptr, 0);
+                        Responses::write(&sock_fd, ssl, message, strlen(message));
                         connPhasePt = ConnPhasePT::PHASE_PT_DATA;
                         delete message;
 
@@ -498,7 +497,7 @@ namespace server
                     }
 
                     // Sends the message that action is not allowed
-                    responses::preContextBadSequence(&sock_fd, ssl, "RCPT TO");
+                    Responses::preContextBadSequence(&sock_fd, ssl, "RCPT TO");
 
                     // Breaks
                     break;
@@ -508,7 +507,7 @@ namespace server
 
                 // Command not found
                 default: {
-                    responses::syntaxError(&sock_fd, ssl);
+                    Responses::syntaxError(&sock_fd, ssl);
                     err = true;
                     goto end;
                 }
@@ -538,8 +537,8 @@ namespace server
             _usedThreads--;
 
             #ifdef DEBUG
-            print.setLevel(logger::Level::LOGGER_WARNING);
-            print << "Server closed transmission channel, client disconnected." << logger::ConsoleOptions::ENDL;
+            print.setLevel(Logger::Level::LOGGER_WARNING);
+            print << "Server closed transmission channel, mailer disconnected." << Logger::ConsoleOptions::ENDL;
             #endif
     }
 };
