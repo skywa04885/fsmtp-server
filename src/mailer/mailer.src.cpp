@@ -134,7 +134,7 @@ namespace Fannst
                     {
                         j++;
                     } else break;
-                } else if (j == 1)
+                } else if (j >= 1)
                 {
                     rc = transmitMessage(ipAddress, this->c_ComposerOptions.o_From.at(0), address,
                             messageBody, false);
