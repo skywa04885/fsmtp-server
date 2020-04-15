@@ -125,6 +125,39 @@ namespace Fannst::FSMTPServer::DKIM {
         // Parses the message body, so we can create the body-hash
         // ----
 
+        DEBUG_ONLY(print << "Started body splitter .." << Logger::ConsoleOptions::ENDL)
+
+        char *headerRet = nullptr;
+        char *bodyRet = nullptr;
+
+        parseMimeMessage(raw, &headerRet, &bodyRet);
+
+        DEBUG_ONLY(print << " - Headers: " << headerRet << Logger::ConsoleOptions::ENDL)
+        DEBUG_ONLY(print << " - Body: " << bodyRet << Logger::ConsoleOptions::ENDL)
+        DEBUG_ONLY(print << "Finished body splitter !" << Logger::ConsoleOptions::ENDL)
+
+        // ----
+        // Starts the canonicalization of the headers
+        // ----
+
+        DEBUG_ONLY(print << "Starting header canonicalization ..." << Logger::ConsoleOptions::ENDL)
+
+        // Checks which algorithm we will use
+        if (config->d_Ago == DKIMCanAlgorithms::DCA_RELAXED_SIMPLE ||
+            config->d_Ago == DKIMCanAlgorithms::DCA_RELAXED_RELAXED)
+        { // Relaxed
+            char *canHeadersRet = nullptr;
+
+            canonicalizeHeadersRelaxed(headerRet, &canHeadersRet);
+        } else
+        { // Simple
+            // TODO: Implement simple algorithm
+        }
+
+        // ----
+        // Starts the canonicalization of the body
+        // ----
+
         return 0;
     }
 }

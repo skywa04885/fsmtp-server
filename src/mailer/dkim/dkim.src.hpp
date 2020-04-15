@@ -68,5 +68,12 @@ namespace Fannst::FSMTPServer::DKIM
      * @param bodyRet
      * @return
      */
-    int parseMimeMessage(const char *raw, char *headerRet, char *bodyRet);
+    int parseMimeMessage(const char *raw, char **headerRet, char **bodyRet);
+
+    /**
+     * Canonicalizes headers using the relaxed method
+     * @param raw
+     * @param ret
+     */
+    void canonicalizeHeadersRelaxed(const char *raw, char **ret);
 }
