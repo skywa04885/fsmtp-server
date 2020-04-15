@@ -10,6 +10,12 @@
 #include <cstring>
 #include <memory.h>
 #include <iostream>
+#include <fannst_libencoding.hpp>
+
+#include <openssl/evp.h>
+#include <openssl/pem.h>
+#include <openssl/rsa.h>
+#include <openssl/sha.h>
 
 #include "../../logger.src.hpp"
 #include "../../pre.hpp"
@@ -76,4 +82,21 @@ namespace Fannst::FSMTPServer::DKIM
      * @param ret
      */
     void canonicalizeHeadersRelaxed(const char *raw, char **ret);
+
+    /**
+     * Canonicalizes body using the relaxed method
+     * @param raw
+     * @param ret
+     */
+    void canonicalizeBodyRelaxed(const char *raw, char **ret);
+
+    namespace OpenSSL
+    {
+        /**
+         * Performs SHA256 hash, and returns the base 64 version
+         * @param raw
+         * @param hRet
+         */
+        void sha256base64(const char *raw, char **hRet);
+    }
 }

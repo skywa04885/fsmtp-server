@@ -140,23 +140,43 @@ namespace Fannst::FSMTPServer::DKIM {
         // Starts the canonicalization of the headers
         // ----
 
+        char *canHeadersRet = nullptr;
+
         DEBUG_ONLY(print << "Starting header canonicalization ..." << Logger::ConsoleOptions::ENDL)
 
         // Checks which algorithm we will use
         if (config->d_Ago == DKIMCanAlgorithms::DCA_RELAXED_SIMPLE ||
             config->d_Ago == DKIMCanAlgorithms::DCA_RELAXED_RELAXED)
         { // Relaxed
-            char *canHeadersRet = nullptr;
-
             canonicalizeHeadersRelaxed(headerRet, &canHeadersRet);
         } else
         { // Simple
             // TODO: Implement simple algorithm
         }
 
+        DEBUG_ONLY(print << "Finished header canonicalization !" << Logger::ConsoleOptions::ENDL)
+        DEBUG_ONLY(std::cout << canHeadersRet << std::endl)
+
         // ----
         // Starts the canonicalization of the body
         // ----
+
+        char *canBodyRet = nullptr;
+
+        // ----
+        // Generates the body hash
+        // ----
+
+        char *bodyHash = nullptr;
+        OpenSSL::sha256base64("test", &bodyHash);
+        std::cout << bodyHash << std::endl;
+
+        // ----
+        // Frees the memory
+        // ----
+
+        free(canHeadersRet);
+        free(bodyHash);
 
         return 0;
     }
