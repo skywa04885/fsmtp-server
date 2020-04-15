@@ -14,13 +14,17 @@
 int main(int argc, char **argv) {
     //Runs the server
 //    Fannst::FSMTPServer::Server::run(25, &argc, &argv);
-    fannst::composer::Options options;
+
+    Fannst::Composer::Options options;
     options.o_HTML = "<h1>Hello World</h1>";
     options.o_Text = "Hello World";
     options.o_From.emplace_back("Luke Rieff", "luke.rieff@fannst.nl");
-    options.o_To.emplace_back("Luke A.C.A. Rieff", "jrieff@notariskantoorbergen.nl");
+    options.o_To.emplace_back("Luke A.C.A. Rieff", "luke.rieff@gmail.com");
     options.o_Subject = "Hello World Test";
     options.o_Domain = "fannst.nl";
+    options.o_DKIMKeyFile = "../keys/dkim/private-key.pem";
+    options.o_EnableDKIM = true;
+    options.o_KeySelector = "default";
 
     Fannst::Mailer mailer(options);
 

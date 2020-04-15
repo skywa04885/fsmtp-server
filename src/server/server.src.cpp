@@ -336,6 +336,8 @@ namespace Fannst::FSMTPServer::Server
                 }
                 if (id != std::string::npos)
                 {
+                    Fannst::Composer::prettyPrintBody(dataBuffer);
+
                     // Sets the status
                     connPhasePt = ConnPhasePT::PHASE_PT_DATA_END;
 
@@ -383,6 +385,10 @@ namespace Fannst::FSMTPServer::Server
             // Checks how the server should respond, and process the operation
             // ----
 
+            // pvY8L676zvMaThUcXyXwgZMPl3GJnPoixKLgK+U99bk=
+            // pvY8L676zvMaThUcXyXwgZMPl3GJnPoixKLgK+U99bk=
+            // pvY8L676zvMaThUcXyXwgZMPl3GJnPoixKLgK+U99bk=
+
             switch (currentCommand)
             {
                 // Client introduces
@@ -428,7 +434,7 @@ namespace Fannst::FSMTPServer::Server
                     DEBUG_ONLY(print << "Client requested TLS connection" << Logger::ConsoleOptions::ENDL)
 
                     // Writes the message
-                    const char *message = ServerCommand::gen(250, "Go ahead", nullptr, 0);
+                    const char *message = ServerCommand::gen(220, "Go ahead", nullptr, 0);
                     Responses::write(&sock_fd, ssl, message, strlen(message));
                     delete message;
 

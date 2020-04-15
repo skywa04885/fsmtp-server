@@ -4,10 +4,6 @@ project(fsmtp_server)
 set(CMAKE_CXX_STANDARD 20)
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
-
-include_directories(${GTK3_INCLUDE_DIRS})
-LINK_DIRECTORIES(${GTK3_LIBRARY_DIRS})
 
 add_library(
         models STATIC
@@ -59,7 +55,16 @@ add_library(
         src/mailer/commands.src.cpp
         src/mailer/socket-handler.cpp
         src/mailer/socket-handler.hpp
+
+        src/mailer/dkim/dkim.src.hpp
+        src/mailer/dkim/dkim.src.cpp
+        src/mailer/dkim/parsers.src.cpp
+        src/mailer/dkim/canonicalization/relaxed.src.cpp
+        src/mailer/dkim/canonicalization/simple.src.cpp
+        src/mailer/dkim/openssl/sha1.src.cpp
+        src/mailer/dkim/openssl/sha256.src.cpp
+        src/mailer/dkim/openssl/rsa-sha256.src.cpp
 )
 
 add_executable(fsmtp_server main.cpp)
-target_link_libraries(fsmtp_server mailer server db logger models -lpthread -lfannst_libcompose -lfannst_libencoding -lcassandra -lresolv -lssl -lcrypto ${GTK3_LIBRARIES})
+target_link_libraries(fsmtp_server mailer server db logger models -lpthread -lfannst_libcompose -lfannst_libencoding -lcassandra -lresolv -lssl -lcrypto)

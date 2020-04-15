@@ -201,6 +201,7 @@ namespace Fannst::FSMTPServer::ServerCommand
         {
             // Introduction
             case 220: {
+                // TODO: Fix so it will report back correct string for start tls continue
                 if (param == nullptr) strcat(&result[0], "UNKNOWN");
                 else strcat(&result[0], &param[0]);
                 strcat(result, " - ESMTP service ready");

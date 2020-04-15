@@ -9,6 +9,7 @@
 #include <fannst_libcompose.hpp>
 
 #include "../logger.src.hpp"
+#include "dkim/dkim.src.hpp"
 #include "resolver.src.hpp"
 #include "commands.src.hpp"
 #include "socket-handler.hpp"
@@ -19,6 +20,7 @@ namespace Fannst
         MST_INITIAL = 0,
         MST_START_TLS,
         MST_START_TLS_CONNECT,
+        MST_HELO_START_TLS_START,
         MST_HELO,
         MST_MAIL_FROM,
         MST_MAIL_TO,
@@ -34,7 +36,7 @@ namespace Fannst
          * Constructor for the mailer
          * @param c_ComposerOptions
          */
-        explicit Mailer(fannst::composer::Options &c_ComposerOptions);
+        explicit Mailer(Fannst::Composer::Options &c_ComposerOptions);
 
         /**
          * Sends an email
@@ -42,9 +44,9 @@ namespace Fannst
          */
         int sendMessage();
     private:
-        fannst::composer::Options &c_ComposerOptions;
+        Fannst::Composer::Options &c_ComposerOptions;
     };
 
-    int transmitMessage(char *ipAddress, fannst::types::EmailAddress &mailFrom,
-                        fannst::types::EmailAddress &mailTo, std::string &messageBody, bool usingSSL);
+    int transmitMessage(char *ipAddress, Fannst::Types::EmailAddress &mailFrom,
+                        Fannst::Types::EmailAddress &mailTo, std::string &messageBody, bool usingSSL);
 };

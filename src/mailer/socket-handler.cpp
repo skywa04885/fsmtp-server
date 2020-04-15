@@ -6,10 +6,10 @@ namespace Fannst::FSMTPClient::SocketHandler
     // The writing methods
     // ----
 
-    bool handleHelo(const int *soc, SSL *ssl)
+    bool handleHelo(const int *soc, SSL *ssl, const char *ipAddress)
     {
         // Generates the response message
-        const char *message = Fannst::gen(Fannst::ClientCommand::CM_HELO, false, nullptr);
+        const char *message = Fannst::gen(Fannst::ClientCommand::CM_HELO, true, ipAddress);
 
         // Writes the message
         if (write(soc, ssl, &message[0], strlen(&message[0])) < 0)
@@ -29,11 +29,24 @@ namespace Fannst::FSMTPClient::SocketHandler
      * @param options
      * @return
      */
-    bool handleMailTo(const int *soc, SSL *ssl, fannst::types::EmailAddress &target)
+    bool handleMailTo(const int *soc, SSL *ssl, Fannst::Types::EmailAddress &target)
     {
-        // Generates the response message
-        const char *message = Fannst::gen(Fannst::ClientCommand::CM_MAIL_TO, false,
-                target.generateMimeString().c_str());
+        // ----
+        // Generates the address
+        // ----
+        const char *addrRaw = target.e_Address.c_str();
+        char *addrResult = reinterpret_cast<char *>(malloc(strlen(&addrRaw[0] + 2)));
+        addrResult[0] = '\0';
+        strcat(&addrResult[0], "<");
+        strcat(&addrResult[0], &addrRaw[0]);
+        strcat(&addrResult[0], ">");
+
+        // ----
+        // Generates the response
+        // ----
+        const char *message = Fannst::gen(Fannst::ClientCommand::CM_MAIL_TO, false, addrResult);
+        delete addrResult;
+
 
         // Writes the response message
         if (write(soc, ssl, &message[0], strlen(&message[0])) < 0)
@@ -53,10 +66,22 @@ namespace Fannst::FSMTPClient::SocketHandler
      * @param options
      * @return
      */
-    bool handleMailFrom(const int *soc, SSL *ssl, fannst::types::EmailAddress &target) {
-        // Generates the response message
-        const char *message = Fannst::gen(Fannst::ClientCommand::CM_MAIL_FROM, false,
-                                          target.generateMimeString().c_str());
+    bool handleMailFrom(const int *soc, SSL *ssl, Fannst::Types::EmailAddress &target) {
+        // ----
+        // Generates the address
+        // ----
+        const char *addrRaw = target.e_Address.c_str();
+        char *addrResult = reinterpret_cast<char *>(malloc(strlen(&addrRaw[0] + 2)));
+        addrResult[0] = '\0';
+        strcat(&addrResult[0], "<");
+        strcat(&addrResult[0], &addrRaw[0]);
+        strcat(&addrResult[0], ">");
+
+        // ----
+        // Generates the response
+        // ----
+        const char *message = Fannst::gen(Fannst::ClientCommand::CM_MAIL_FROM, false, addrResult);
+        delete addrResult;
 
         // Writes the response message
         if (write(soc, ssl, &message[0], strlen(&message[0])) < 0) {

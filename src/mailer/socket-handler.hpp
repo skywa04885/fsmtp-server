@@ -103,7 +103,7 @@ namespace Fannst::FSMTPClient::SocketHandler
     // The writing methods
     // ----
 
-    bool handleHelo(const int *soc, SSL *ssl);
+    bool handleHelo(const int *soc, SSL *ssl, const char *ipAddress);
 
     /**
      * Handles mail to
@@ -112,7 +112,7 @@ namespace Fannst::FSMTPClient::SocketHandler
      * @param options
      * @return
      */
-    bool handleMailTo(const int *soc, SSL *ssl, fannst::composer::Options &options);
+    bool handleMailTo(const int *soc, SSL *ssl, Fannst::Composer::Options &options);
 
 
     /**
@@ -122,7 +122,7 @@ namespace Fannst::FSMTPClient::SocketHandler
      * @param options
      * @return
      */
-    bool handleMailTo(const int *soc, SSL *ssl, fannst::types::EmailAddress &target);
+    bool handleMailTo(const int *soc, SSL *ssl, Fannst::Types::EmailAddress &target);
 
     /**
      * Handles mail from
@@ -131,7 +131,7 @@ namespace Fannst::FSMTPClient::SocketHandler
      * @param options
      * @return
      */
-    bool handleMailFrom(const int *soc, SSL *ssl, fannst::types::EmailAddress &target);
+    bool handleMailFrom(const int *soc, SSL *ssl, Fannst::Types::EmailAddress &target);
 
     /**
      * Sends data command

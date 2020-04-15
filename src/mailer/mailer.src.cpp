@@ -3,7 +3,7 @@
 namespace Fannst
 {
 
-    Mailer::Mailer(fannst::composer::Options &c_ComposerOptions):
+    Mailer::Mailer(Fannst::Composer::Options &c_ComposerOptions):
         c_ComposerOptions(c_ComposerOptions)
     {}
 
@@ -35,13 +35,13 @@ namespace Fannst
         // Prepares the message body
         // ----
 
-        messageBody = fannst::composer::compose(this->c_ComposerOptions);
+        messageBody = Fannst::Composer::compose(this->c_ComposerOptions);
 
         // ----
         // Starts the sendMessage loop
         // ----
 
-        for (fannst::types::EmailAddress &address : this->c_ComposerOptions.o_To)
+        for (Fannst::Types::EmailAddress &address : this->c_ComposerOptions.o_To)
         {
             // ----
             // Creates the logger if debug
@@ -109,6 +109,8 @@ namespace Fannst
             // Resolves the ip address
             char ipAddress[45];
             rc = Fannst::dns::resolveIpAddress(record.r_Exchange, &ipAddress[0]);
+            DEBUG_ONLY(print << "Resolved ip address of: " << record.r_Exchange << ", to: " <<
+            ipAddress << Fannst::FSMTPServer::Logger::ConsoleOptions::ENDL)
 
             // Checks if the resolve went successfully
             if (rc < 0)
@@ -150,9 +152,32 @@ namespace Fannst
         return 0;
     }
 
-    int transmitMessage(char *ipAddress, fannst::types::EmailAddress &mailFrom,
-            fannst::types::EmailAddress &mailTo, std::string &messageBody, bool usingSSL)
+    int transmitMessage(char *ipAddress, Fannst::Types::EmailAddress &mailFrom,
+            Fannst::Types::EmailAddress &mailTo, std::string &messageBody, bool usingSSL)
     {
+        // Gets the time
+        std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
+        long a = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
+
+        // Performs dkim
+        Fannst::FSMTPServer::DKIM::DKIMHeaderConfig config{};
+        config.d_Domain = "fannst.nl";
+        config.d_ExpireDate = a + 600;
+        config.d_SignDate = a;
+        config.d_KeyS = "default";
+
+        char *sigRet = nullptr;
+        Fannst::FSMTPServer::DKIM::sign(messageBody.c_str(), sigRet, &config);
+        std::cout << sigRet << std::endl;
+
+        return 0;
+
+        // ----
+        // Creates the logger if enabled
+        // ----
+
+        DEBUG_ONLY(Fannst::FSMTPServer::Logger::Console print(Fannst::FSMTPServer::Logger::Level::LOGGER_DEBUG, "Message Transmission"))
+
         struct sockaddr_in server{};
         int rc, sock_fd;
 
@@ -179,6 +204,8 @@ namespace Fannst
         timeout.tv_sec = 7;
         timeout.tv_usec = 0;
 
+        DEBUG_ONLY(print << "Setting socket options" << Fannst::FSMTPServer::Logger::ConsoleOptions::ENDL)
+
         // Sets the timeout
         if (
                 setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO,
@@ -194,6 +221,8 @@ namespace Fannst
         // ----
         // Connects the socket
         // ----
+
+        DEBUG_ONLY(print << "Connecting to: " << ipAddress << Fannst::FSMTPServer::Logger::ConsoleOptions::ENDL)
 
         if (connect(sock_fd, reinterpret_cast<sockaddr *>(&server), sizeof(server)) < 0)
         {
@@ -241,8 +270,8 @@ namespace Fannst
             {
                 case 220:
                 { // Initial greeting
-                    // Sets the next state
-                    state = MailerState::MST_HELO;
+                    if (state == MailerState::MST_INITIAL) state = MailerState::MST_HELO;
+                    else if (state == MailerState::MST_START_TLS) state = MailerState::MST_START_TLS_CONNECT;
 
                     // Breaks
                     break;
@@ -254,7 +283,7 @@ namespace Fannst
                     else if (state == MailerState::MST_MAIL_FROM) state = MailerState::MST_MAIL_TO;
                     else if (state == MailerState::MST_MAIL_TO) state = MailerState::MST_DATA;
                     else if (state == MailerState::MST_DATA_START) state = MailerState::MST_DATA_END;
-                    else if (state == MailerState::MST_START_TLS) state = MailerState::MST_START_TLS_CONNECT;
+                    else if (state == MailerState::MST_HELO_START_TLS_START) state = MailerState::MST_START_TLS;
 
                     // Breaks
                     break;
@@ -298,6 +327,8 @@ namespace Fannst
                     // ----
                     // Initializes the ssl connection or something
                     // ----
+
+                    DEBUG_ONLY(print << "Initializing TLS" << Fannst::FSMTPServer::Logger::ConsoleOptions::ENDL)
 
                     // The SSL method
                     const SSL_METHOD *sslMethod = SSLv23_client_method();
@@ -344,6 +375,9 @@ namespace Fannst
                         goto end;
                     }
 
+                    DEBUG_ONLY(print << "TLS Initialized, sending EHLO again" <<
+                    ipAddress << Fannst::FSMTPServer::Logger::ConsoleOptions::ENDL)
+
                     // ----
                     // Sends the required hello message
                     // ----
@@ -352,7 +386,7 @@ namespace Fannst
                     state = MailerState::MST_HELO;
 
                     // Sends the message
-                    if (!Fannst::FSMTPClient::SocketHandler::handleHelo(&sock_fd, ssl))
+                    if (!Fannst::FSMTPClient::SocketHandler::handleHelo(&sock_fd, ssl, ipAddress))
                         goto end;
 
                     break;
@@ -360,10 +394,12 @@ namespace Fannst
 
                 case MailerState::MST_HELO:
                 {
-                    if (!Fannst::FSMTPClient::SocketHandler::handleHelo(&sock_fd, ssl))
+                    if (!Fannst::FSMTPClient::SocketHandler::handleHelo(&sock_fd, ssl, ipAddress))
                         goto end;
 
-                    if (usingSSL) state = MailerState::MST_START_TLS;
+                    if (usingSSL) {
+                        state = MailerState::MST_HELO_START_TLS_START;
+                    }
 
                     break;
                 }

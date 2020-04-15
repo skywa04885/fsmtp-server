@@ -111,7 +111,7 @@ namespace Fannst::dns
         if (record == nullptr) return -1;
 
         // Parses the ip address
-        auto *address = reinterpret_cast<in_addr *>(record->h_addr_list);
+        in_addr *address = reinterpret_cast<in_addr *>(record->h_addr);
 
         // Stores the address in the target
         const char *addr = inet_ntoa(*address);

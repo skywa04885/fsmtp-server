@@ -63,6 +63,12 @@ namespace Fannst::FSMTPServer::Logger
             return *this;
         }
 
+        Console& operator << (std::size_t in)
+        {
+            this->c_Temp.append(std::to_string(in));
+            return *this;
+        }
+
         Console& operator << (ConsoleOptions opt)
         {
             // Checks which option has been selected
