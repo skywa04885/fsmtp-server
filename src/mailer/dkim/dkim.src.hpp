@@ -20,7 +20,7 @@
 #include "../../logger.src.hpp"
 #include "../../pre.hpp"
 
-#define FANNST_DKIM_TOTAL_PARTS 11
+#define FANNST_DKIM_TOTAL_PARTS 10
 
 namespace Fannst::FSMTPServer::DKIM
 {
@@ -49,7 +49,7 @@ namespace Fannst::FSMTPServer::DKIM
      * @param ret
      * @return
      */
-    int formatSignature(const char *parts[FANNST_DKIM_TOTAL_PARTS], char *ret);
+    int formatSignature(const char *parts[FANNST_DKIM_TOTAL_PARTS], char **ret);
 
     /**
      * Builds an signature part
@@ -89,6 +89,8 @@ namespace Fannst::FSMTPServer::DKIM
      * @param ret
      */
     void canonicalizeBodyRelaxed(const char *raw, char **ret);
+
+    char *cleanWhitespace(const char *a, std::size_t aLen);
 
     namespace OpenSSL
     {

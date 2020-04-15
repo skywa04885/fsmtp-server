@@ -84,7 +84,6 @@ namespace Fannst::FSMTPServer::DKIM {
                 strcat(&(*bodyRet)[0], "\r\n");
             } else
             { // Is headers
-
                 // Sets the new buffer size, without the '\n', with "\r\n"
                 headersBufferSize += strlen(&tok[1]) + 2;
 

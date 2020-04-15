@@ -5,6 +5,7 @@
  * Copyright: Free to use, without modifying
  */
 
+#include <fannst_libcompose.hpp>
 #include "dkim.src.hpp"
 
 namespace Fannst::FSMTPServer::DKIM {
@@ -48,6 +49,8 @@ namespace Fannst::FSMTPServer::DKIM {
      */
     int sign(const char *raw, char *sigRet, const DKIMHeaderConfig *config)
     {
+        std::cout << raw << std::endl;
+
         /*
          * 1. Create already-known values
          * 2. Canonicalize body and create body-hash
@@ -141,7 +144,6 @@ namespace Fannst::FSMTPServer::DKIM {
         // ----
 
         char *canHeadersRet = nullptr;
-
         DEBUG_ONLY(print << "Starting header canonicalization ..." << Logger::ConsoleOptions::ENDL)
 
         // Checks which algorithm we will use
@@ -162,21 +164,46 @@ namespace Fannst::FSMTPServer::DKIM {
         // ----
 
         char *canBodyRet = nullptr;
+        DEBUG_ONLY(print << "Starting body canonicalization ..." << Logger::ConsoleOptions::ENDL)
 
         // ----
         // Generates the body hash
         // ----
 
+        // Canonicalizes the section
+        canonicalizeBodyRelaxed(&bodyRet[0], &canBodyRet);
+        std::cout << '\'' << bodyRet << "\'" << std::endl;
+
+        // Calculates the hash value
         char *bodyHash = nullptr;
-        OpenSSL::sha256base64("test", &bodyHash);
+        OpenSSL::sha256base64(&canBodyRet[0], &bodyHash);
         std::cout << bodyHash << std::endl;
+
+        // Adds the part to the final array
+        sigParts[8] = buildSigPart("h", "date:message-id:from:to:suject");
+        sigParts[9] = buildSigPart("bh", bodyHash);
+        sigParts[10] = buildSigPart("b", "AAA==");
 
         // ----
         // Frees the memory
         // ----
 
         free(canHeadersRet);
+        free(canBodyRet);
         free(bodyHash);
+
+        return 0;
+    }
+
+    /**
+     * Formats an array of signature parts, into the final signature
+     * @param parts
+     * @param ret
+     * @return
+     */
+    int formatSignature(const char *parts[FANNST_DKIM_TOTAL_PARTS], char **ret)
+    {
+        // Starts looping over the parts
 
         return 0;
     }

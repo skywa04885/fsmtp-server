@@ -13,11 +13,49 @@ namespace Fannst::FSMTPServer::DKIM {
      * @param a
      * @param aLen
      */
-    inline void cleanWhitespace(char *a, std::size_t aLen)
+    char *cleanWhitespace(const char *a, std::size_t aLen)
     {
-        // Copies the string
-        char *b = reinterpret_cast<char *>(malloc(aLen));
-        memcpy(&b[0], &a[0], aLen);
+        // ----
+        // Prepares the memory copy
+        // ----
+
+        // Reserves the memory
+        char *tStr = reinterpret_cast<char *>(malloc(aLen));
+        // Resets the len so we can use it as an coutner
+        aLen = 0;
+
+        // ----
+        // Starts looping
+        // ----
+
+        bool lww = false;
+        while (*a != '\0')
+        {
+            // Checks if it is whitespace
+            if (*a == ' ')
+            {
+                // If previous was whitespace, skip char
+                if (lww)
+                {
+                    a++;
+                    continue;
+                }
+
+                lww = true;
+            } else lww = false;
+
+            // Appends the char
+            tStr[aLen] = *a;
+
+            // Increments the indexes
+            aLen++;
+            a++;
+        }
+
+        tStr[aLen] = '\0';
+
+        // Returns the result
+        return tStr;
     }
 
     /**
@@ -197,7 +235,94 @@ namespace Fannst::FSMTPServer::DKIM {
         *ret = reinterpret_cast<char *>(malloc(1));
         (*ret)[0] = '\0';
 
-        // Frees the memory
-        free(rawC);
+        // ----
+        // Removes double whitespace
+        // ----
+
+        // Gets an version without whitespace
+        char *raw2 = cleanWhitespace(&raw[0], strlen(&raw[0]));
+
+        // ----
+        // Finishes the data by
+        // 1. Remove whitespace at end of lines
+        // 2. Remove all empty lines at end of body
+        // ----
+
+        // Creates the tokenizer, splis at '\r' so we can check if line empty
+        char *tok = strtok(&raw2[0], "\r");
+
+        // Loops while tokens available
+        std::size_t i = 0;
+        std::size_t iLastRealContent = 0;
+        std::size_t cSize;
+        while (tok != nullptr)
+        {
+            // Gets the token size
+            cSize = strlen(&tok[0]);
+
+            // ----
+            // Removes the not wanted space
+            // ----
+
+            if (tok[cSize-1] == ' ')
+            {
+                // Removes the last char by setting it to '\0'
+                tok[cSize-1] = '\0';
+                // Removes one from the size, so the buffer will allocate one less
+                cSize--;
+            }
+
+            // ----
+            // Stores the data
+            // ----
+
+            // Increases buffer size
+            retBufferSize += cSize + 2;
+            *ret = reinterpret_cast<char *>(realloc(&(*ret)[0], retBufferSize));
+
+            // If first row, add whole string, else without '\n'
+            if (i == 0) strcat(&(*ret)[0], &tok[0]);
+            else strcat(&(*ret)[0], &tok[1]);
+
+            // Adds the '\r\n'
+            strcat(&(*ret)[0], "\r\n");
+
+            // ----
+            // Checks if the line was empty, if not store index
+            // ----
+
+            if (tok[1]) iLastRealContent = i;
+
+            // ----
+            // Goes to the next item
+            // ----
+
+            // Increments the index
+            i++;
+            // Goes to the next token
+            tok = strtok(nullptr, "\r");
+        }
+
+        // ----
+        // Removes the not required empty lines
+        // ----
+
+        // Removes the last real content from i, to determine where we are going to stop the string
+        i -= iLastRealContent;
+
+        // Removes one because one of the last is required
+        i -= 1;
+
+        // Multiplies i by two, so we get the amount of chars to remove from the string end
+        i *= 2;
+
+        // Substracts it from the string
+        (*ret)[strlen(&(*ret)[0]) - i] = '\0';
+
+        // ----
+        // Free memory
+        // ----
+
+        free(raw2);
     }
 }

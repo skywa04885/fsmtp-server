@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
 //    Fannst::FSMTPServer::Server::run(25, &argc, &argv);
 
     Fannst::Composer::Options options;
-    options.o_HTML = "<h1>Hello World</h1>";
+    options.o_HTML = "<h1 class=\"test\">Hello World</h1>";
     options.o_Text = "Hello World";
     options.o_From.emplace_back("Luke Rieff", "luke.rieff@fannst.nl");
     options.o_To.emplace_back("Luke A.C.A. Rieff", "tayyip.g13@gmail.com");
