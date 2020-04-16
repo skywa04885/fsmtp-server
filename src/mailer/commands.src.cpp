@@ -31,6 +31,8 @@ namespace Fannst
     {
         char *target = nullptr;
 
+        // TODO: Remake generator to be more efficient using realloc
+
         // Checks if there are args, if so allocate extra memory for them
         if (args == nullptr) target = reinterpret_cast<char *>(malloc(24));
         else target = reinterpret_cast<char *>(malloc(strlen(&args[0]) + 24));

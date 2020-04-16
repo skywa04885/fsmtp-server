@@ -35,17 +35,35 @@ namespace Fannst::FSMTPServer::DKIM::OpenSSL {
         }
 
         // Gets the hash result
-        auto *digest = reinterpret_cast<unsigned char *>(malloc(SHA256_DIGEST_LENGTH + 1));
+        auto *digest = reinterpret_cast<unsigned char *>(malloc(SHA256_DIGEST_LENGTH));
         if (SHA256_Final(&digest[0], &ctx) <= 0)
         {
             PREP_ERROR("SHA256 Hash", "Could not perform SHA256_Final")
         }
 
         // ----
-        // Gets the base64 string
+        // Gets the Base64 encoded value
         // ----
-        digest[SHA256_DIGEST_LENGTH] = '\0';
-        *hRet = const_cast<char *>(Base64::encode(reinterpret_cast<const char *>(digest)));
+
+        BIO *bio, *b64;
+        BUF_MEM *bufMem;
+
+        b64 = BIO_new(BIO_f_base64());
+        bio = BIO_new(BIO_s_mem());
+        bio = BIO_push(b64, bio);
+        BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
+
+        BIO_write(bio, digest, SHA256_DIGEST_LENGTH);
+        BIO_flush(bio);
+        BIO_get_mem_ptr(bio, &bufMem);
+        BIO_set_close(bio, BIO_NOCLOSE);
+        BIO_free_all(bio);
+
+        // ----
+        // Stores the result
+        // ----
+
+        *hRet = (*bufMem).data;
 
         // ----
         // Frees the memory

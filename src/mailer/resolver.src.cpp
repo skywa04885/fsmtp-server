@@ -1,4 +1,5 @@
 #include "resolver.src.hpp"
+#include "../pre.hpp"
 
 namespace Fannst::dns
 {
@@ -62,13 +63,13 @@ namespace Fannst::dns
     {
         unsigned long len;
 
-        // Copies the strings, adds one for the  '\0'
-        len = strlen(r_Exchange) + 1;
-        this->r_Exchange = reinterpret_cast<char *>(malloc(sizeof(char) * len));
+        // Copies the strings
+        len = strlen(r_Exchange);
+        this->r_Exchange = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(len, 0)));
         memcpy(this->r_Exchange, r_Exchange, len);
 
-        len = strlen(r_Name) + 1;
-        this->r_Name = reinterpret_cast<char *>(malloc(sizeof(char) * len));
+        len = strlen(r_Name);
+        this->r_Name = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(len, 0)));
         memcpy(this->r_Name, r_Name, len);
 
         // Stores the integers

@@ -11,7 +11,7 @@ namespace Fannst
      * Sends an email
      * @return
      */
-    int Mailer::sendMessage() {
+    int Mailer::sendMessage(const char *extIp) {
 
         // ----
         // Initializes OpenSSL
@@ -126,7 +126,7 @@ namespace Fannst
                 {
                     // Transmits the message, using StartTLS
                     rc = transmitMessage(ipAddress, this->c_ComposerOptions.o_From.at(0), address,
-                            messageBody, true);
+                            messageBody, true, extIp);
 
                     // Checks if the message was sent successfully
                     if (rc == 0) break;
@@ -139,7 +139,7 @@ namespace Fannst
                 } else if (j >= 1)
                 {
                     rc = transmitMessage(ipAddress, this->c_ComposerOptions.o_From.at(0), address,
-                            messageBody, false);
+                            messageBody, false, extIp);
 
                     // Checks if the message was sent successfully
                     if (rc == 0) break;
@@ -153,7 +153,7 @@ namespace Fannst
     }
 
     int transmitMessage(char *ipAddress, Fannst::Types::EmailAddress &mailFrom,
-            Fannst::Types::EmailAddress &mailTo, std::string &messageBody, bool usingSSL)
+            Fannst::Types::EmailAddress &mailTo, std::string &messageBody, bool usingSSL, const char *extIp)
     {
         // Gets the time
         std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
@@ -169,6 +169,14 @@ namespace Fannst
 
         char *sigRet = nullptr;
         Fannst::FSMTPServer::DKIM::sign(messageBody.c_str(), &sigRet, &config);
+
+
+        std::cout << std::endl << std::endl << std::endl << "----------" << std::endl;
+
+        std::cout << &sigRet[0] << std::endl;
+
+        std::cout << "----------" << std::endl;
+//        std::exit(-1);
 
         // ----
         // Creates the logger if enabled
@@ -304,6 +312,11 @@ namespace Fannst
                     rc = -3;
                     goto end;
                 }
+                case 550:
+                {
+                    rc = -1;
+                    goto end;
+                }
             }
 
             // ----
@@ -384,7 +397,7 @@ namespace Fannst
                     state = MailerState::MST_HELO;
 
                     // Sends the message
-                    if (!Fannst::FSMTPClient::SocketHandler::handleHelo(&sock_fd, ssl, ipAddress))
+                    if (!Fannst::FSMTPClient::SocketHandler::handleHelo(&sock_fd, ssl, extIp))
                         goto end;
 
                     break;
@@ -392,7 +405,7 @@ namespace Fannst
 
                 case MailerState::MST_HELO:
                 {
-                    if (!Fannst::FSMTPClient::SocketHandler::handleHelo(&sock_fd, ssl, ipAddress))
+                    if (!Fannst::FSMTPClient::SocketHandler::handleHelo(&sock_fd, ssl, extIp))
                         goto end;
 
                     if (usingSSL) {

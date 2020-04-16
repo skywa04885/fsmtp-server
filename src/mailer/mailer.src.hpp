@@ -42,11 +42,12 @@ namespace Fannst
          * Sends an email
          * @return
          */
-        int sendMessage();
+        int sendMessage(const char *extIp);
     private:
         Fannst::Composer::Options &c_ComposerOptions;
     };
 
     int transmitMessage(char *ipAddress, Fannst::Types::EmailAddress &mailFrom,
-                        Fannst::Types::EmailAddress &mailTo, std::string &messageBody, bool usingSSL);
+                        Fannst::Types::EmailAddress &mailTo, std::string &messageBody, bool usingSSL,
+                        const char *extIp);
 };

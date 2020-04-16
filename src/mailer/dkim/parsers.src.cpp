@@ -17,6 +17,17 @@ namespace Fannst::FSMTPServer::DKIM {
      */
     int parseMimeMessage(const char *raw, char **headerRet, char **bodyRet)
     {
+        std::size_t headersBufferSize;
+        std::size_t bodyBufferSize;
+        std::size_t size2cpy;
+
+        bool bodyHit;
+
+        char i;
+
+        char *tok;
+        char *rawC;
+
         // ----
         // Prepares the buffers for the results
         // ----
@@ -24,29 +35,29 @@ namespace Fannst::FSMTPServer::DKIM {
         // Prepares the headers return
         *headerRet = reinterpret_cast<char *>(malloc(1));
         (*headerRet)[0] = '\0';
-        std::size_t headersBufferSize = 1;
+        headersBufferSize = 1;
 
         // Prepares the body return
         *bodyRet = reinterpret_cast<char *>(malloc(1));
         (*bodyRet)[0] = '\0';
-        std::size_t bodyBufferSize = 1;
+        bodyBufferSize = 1;
 
         // ----
         // Starts looping over the message, by tokenizing on "\r\n"
         // ----
 
         // Prepares the looping variables
-        bool bodyHit = false;
+        bodyHit = false;
 
         // Copies the raw data, so we can process it
-        std::size_t size2cpy = strlen(&raw[0]);
-        char *rawC = reinterpret_cast<char *>(malloc(size2cpy));
+        size2cpy = ALLOC_CAS_STRING(strlen(&raw[0]), 0);
+        rawC = reinterpret_cast<char *>(malloc(size2cpy));
         memcpy(&rawC[0], &raw[0], size2cpy);
 
         // Prepares the tokenizer, we split at \r because we will need to chech
         // if empty
-        char *tok = strtok(&rawC[0], "\r");
-        char i = 0;
+        tok = strtok(&rawC[0], "\r");
+        i = 0;
 
         // Creates the tokenizing loop
         while (tok != nullptr)

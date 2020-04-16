@@ -13,15 +13,17 @@ namespace Fannst::FSMTPServer::DKIM {
      * @param a
      * @param aLen
      */
-    char *cleanWhitespace(const char *a, std::size_t aLen)
+    void cleanWhitespace(const char *a, std::size_t aLen, char **ret)
     {
         // ----
         // Prepares the memory copy
         // ----
 
+        // Clears existing memory, if it was not empty
+        if (*ret != nullptr) free(*ret);
         // Reserves the memory
-        char *tStr = reinterpret_cast<char *>(malloc(aLen));
-        // Resets the len so we can use it as an coutner
+        *ret = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(aLen, 0)));
+        // Resets the len so we can use it as an counter
         aLen = 0;
 
         // ----
@@ -45,17 +47,15 @@ namespace Fannst::FSMTPServer::DKIM {
             } else lww = false;
 
             // Appends the char
-            tStr[aLen] = *a;
+            (*ret)[aLen] = *a;
 
             // Increments the indexes
             aLen++;
             a++;
         }
 
-        tStr[aLen] = '\0';
-
-        // Returns the result
-        return tStr;
+        // Sets the zero termination char
+        (*ret)[aLen] = '\0';
     }
 
     /**
@@ -123,12 +123,12 @@ namespace Fannst::FSMTPServer::DKIM {
             // Checks if it matches
             if (strcmp(&cTmp[0], "message-id") == 0) return true;
 
-//            // Copies the string
-//            memcpy(&cTmp[0], &h[0], 12);
-//            cTmp[12] = '\0';
-//
-//            // Checks if it matches
-//            if (strcmp(&cTmp[0], "mime-version") == 0) return true;
+            // Copies the string
+            memcpy(&cTmp[0], &h[0], 12);
+            cTmp[12] = '\0';
+
+            // Checks if it matches
+            if (strcmp(&cTmp[0], "mime-version") == 0) return true;
 
         }
 
@@ -160,7 +160,7 @@ namespace Fannst::FSMTPServer::DKIM {
         // Prepares the tokenizer
         // ----
 
-        std::size_t size2cpy = strlen(&raw[0]);
+        std::size_t size2cpy = ALLOC_CAS_STRING(strlen(&raw[0]), 0);
         char *rawC = reinterpret_cast<char *>(malloc(size2cpy));
         memcpy(&rawC[0], &raw[0], size2cpy);
 
@@ -207,6 +207,7 @@ namespace Fannst::FSMTPServer::DKIM {
             tok = strtok(nullptr, "\r\n");
         }
 
+        // Removes the last <CR><LF>
         (*ret)[strlen(*ret) - 2] = '\0';
 
         // Frees the memory
@@ -220,11 +221,18 @@ namespace Fannst::FSMTPServer::DKIM {
      */
     void canonicalizeBodyRelaxed(const char *raw, char **ret)
     {
+        std::size_t i = 0;
+        std::size_t iLastRealContent = 0;
+        std::size_t cSize;
+        std::size_t retBufferSize;
+
+        char *raw2 = nullptr;
+
         // ----
         // Allocates 1 byte of memory as starting string in ret
         // ----
 
-        std::size_t retBufferSize = 1;
+        retBufferSize = 1;
         *ret = reinterpret_cast<char *>(malloc(1));
         (*ret)[0] = '\0';
 
@@ -233,7 +241,7 @@ namespace Fannst::FSMTPServer::DKIM {
         // ----
 
         // Gets an version without whitespace
-        char *raw2 = cleanWhitespace(&raw[0], strlen(&raw[0]));
+        cleanWhitespace(&raw[0], strlen(&raw[0]), &raw2);
 
         // ----
         // Finishes the data by
@@ -245,9 +253,8 @@ namespace Fannst::FSMTPServer::DKIM {
         char *tok = strtok(&raw2[0], "\r");
 
         // Loops while tokens available
-        std::size_t i = 0;
-        std::size_t iLastRealContent = 0;
-        std::size_t cSize;
+        i = 0;
+        iLastRealContent = 0;
         while (tok != nullptr)
         {
             // Gets the token size

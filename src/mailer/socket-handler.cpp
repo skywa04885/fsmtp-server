@@ -8,8 +8,28 @@ namespace Fannst::FSMTPClient::SocketHandler
 
     bool handleHelo(const int *soc, SSL *ssl, const char *ipAddress)
     {
+        // ----
+        // Formats the address
+        // ----
+
+        // Generates the temp buffer for message
+        char *st = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(strlen(&ipAddress[0]), 2)));
+        st[0] = '\0';
+
+        // Appends the stuff
+        strcat(&st[0], "[");
+        strcat(&st[0], &ipAddress[0]);
+        strcat(&st[0], "]");
+
+        // ----
+        // Transmits the message
+        // ----
+
         // Generates the response message
-        const char *message = Fannst::gen(Fannst::ClientCommand::CM_HELO, true, ipAddress);
+        const char *message = Fannst::gen(Fannst::ClientCommand::CM_HELO, true, st);
+
+        // Deletes tge temp string
+        free(st);
 
         // Writes the message
         if (write(soc, ssl, &message[0], strlen(&message[0])) < 0)
@@ -35,7 +55,7 @@ namespace Fannst::FSMTPClient::SocketHandler
         // Generates the address
         // ----
         const char *addrRaw = target.e_Address.c_str();
-        char *addrResult = reinterpret_cast<char *>(malloc(strlen(&addrRaw[0] + 2)));
+        char *addrResult = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(strlen(&addrRaw[0] + 2), 0)));
         addrResult[0] = '\0';
         strcat(&addrResult[0], "<");
         strcat(&addrResult[0], &addrRaw[0]);
@@ -71,7 +91,7 @@ namespace Fannst::FSMTPClient::SocketHandler
         // Generates the address
         // ----
         const char *addrRaw = target.e_Address.c_str();
-        char *addrResult = reinterpret_cast<char *>(malloc(strlen(&addrRaw[0] + 2)));
+        char *addrResult = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(strlen(&addrRaw[0] + 2), 0)));
         addrResult[0] = '\0';
         strcat(&addrResult[0], "<");
         strcat(&addrResult[0], &addrRaw[0]);
@@ -126,7 +146,7 @@ namespace Fannst::FSMTPClient::SocketHandler
     bool handleDataTransmission(const int *soc, SSL *ssl, const char *message, const int &n)
     {
         // Reserves the memory for the message, message length + 5
-        char *messageReady = reinterpret_cast<char *>(malloc(n + 5));
+        char *messageReady = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(n, 5)));
         messageReady[0] = '\0';
 
         // Copies the string into the message

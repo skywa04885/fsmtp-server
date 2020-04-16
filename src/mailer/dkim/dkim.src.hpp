@@ -25,6 +25,7 @@
 
 namespace Fannst::FSMTPServer::DKIM
 {
+    // Enumerator for canonicalization type
     typedef enum {
         DCA_RELAXED_RELAXED = 0,
         DCA_RELAXED_SIMPLE,
@@ -51,7 +52,8 @@ namespace Fannst::FSMTPServer::DKIM
      * @param ret
      * @return
      */
-    int formatSignature(char *parts[FANNST_DKIM_TOTAL_PARTS], char **ret, bool nl);
+    int formatSignature(char *parts[FANNST_DKIM_TOTAL_PARTS],
+            char **ret, bool nl);
 
     /**
      * Builds an signature part
@@ -59,7 +61,7 @@ namespace Fannst::FSMTPServer::DKIM
      * @param kv
      * @return
      */
-    char *buildSigPart(const char *key, const char *kv);
+    void buildSigPart(const char *key, const char *kv, char **ret);
 
     /**
      * Signs an MIME message
@@ -67,7 +69,8 @@ namespace Fannst::FSMTPServer::DKIM
      * @param config
      * @return
      */
-    int sign(const char *raw, char **sigRet, const DKIMHeaderConfig *config);
+    int sign(const char *raw, char **sigRet,
+            const DKIMHeaderConfig *config);
 
     /**
      * Splits MIME message into two sections
@@ -76,7 +79,8 @@ namespace Fannst::FSMTPServer::DKIM
      * @param bodyRet
      * @return
      */
-    int parseMimeMessage(const char *raw, char **headerRet, char **bodyRet);
+    int parseMimeMessage(const char *raw, char **headerRet,
+            char **bodyRet);
 
     /**
      * Canonicalizes headers using the relaxed method
@@ -92,7 +96,7 @@ namespace Fannst::FSMTPServer::DKIM
      */
     void canonicalizeBodyRelaxed(const char *raw, char **ret);
 
-    char *cleanWhitespace(const char *a, std::size_t aLen);
+    void cleanWhitespace(const char *a, std::size_t aLen, char **ret);
 
     namespace OpenSSL
     {
@@ -108,7 +112,8 @@ namespace Fannst::FSMTPServer::DKIM
          * @param raw
          * @param hRet
          */
-        int rsaSha256genSig(const char *raw, const char *pKeyFile, char **hRet);
+        int rsaSha256genSig(const char *raw,
+                const char *pKeyFile, char **hRet);
     }
 
     /**
