@@ -122,6 +122,14 @@ namespace Fannst::FSMTPServer::DKIM {
 
             // Checks if it matches
             if (strcmp(&cTmp[0], "message-id") == 0) return true;
+
+//            // Copies the string
+//            memcpy(&cTmp[0], &h[0], 12);
+//            cTmp[12] = '\0';
+//
+//            // Checks if it matches
+//            if (strcmp(&cTmp[0], "mime-version") == 0) return true;
+
         }
 
         return false;
@@ -198,6 +206,8 @@ namespace Fannst::FSMTPServer::DKIM {
             // Goes to the next token
             tok = strtok(nullptr, "\r\n");
         }
+
+        (*ret)[strlen(*ret) - 2] = '\0';
 
         // Frees the memory
         free(rawC);
