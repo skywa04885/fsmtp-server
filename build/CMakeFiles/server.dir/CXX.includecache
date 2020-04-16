@@ -33,6 +33,10 @@ malloc.h
 -
 cstddef
 -
+cstring
+-
+../pre.hpp
+/media/skywa04885/Main/Projects/C/fsmtp-server/src/pre.hpp
 
 /media/skywa04885/Main/Projects/C/fsmtp-server/src/logger.src.hpp
 iostream
@@ -73,6 +77,8 @@ memory.h
 -
 ../pre.hpp
 /media/skywa04885/Main/Projects/C/fsmtp-server/src/server/./pre.hpp
+../flib/strings.hpp
+/media/skywa04885/Main/Projects/C/fsmtp-server/src/server/./flib/strings.hpp
 
 /media/skywa04885/Main/Projects/C/fsmtp-server/src/server/./responses.src.hpp
 openssl/ssl.h
@@ -111,6 +117,8 @@ memory.h
 -
 ../pre.hpp
 /media/skywa04885/Main/Projects/C/fsmtp-server/src/pre.hpp
+../flib/strings.hpp
+/media/skywa04885/Main/Projects/C/fsmtp-server/src/flib/strings.hpp
 
 /media/skywa04885/Main/Projects/C/fsmtp-server/src/server/server.src.cpp
 fannst_libcompose.hpp

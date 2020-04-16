@@ -175,106 +175,83 @@ namespace Fannst::FSMTPServer::ServerCommand
      */
     char *gen(int code, const char *param, const char *listParams[], char listParamsN)
     {
-        fcb result = nullptr;
-        fcb temp = nullptr;
+        char *result = nullptr;
+        std::size_t resultSize;
 
         // ----
         // Prepares the strings
         // ----
 
-        result = fcb_new(3);
+        // Creates the buffer with 3 chars available for the code, and one for the dash or space
+        result = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(4, 0)));
+        result[0] = '\0';
+        resultSize = 5;
 
         // ----
         // Appends the code
         // ----
+
+        // Creates the code buffer
+        char buffer[12];
+        // Turns the code into an string
+        sprintf(&buffer[0],"%d", code);
 
         // Adds the code
-        fcb_strcat(result, code);
-
-        /*
-        char *result = nullptr;
-        char *temp = nullptr;
+        strcat(&result[0], &buffer[0]);
 
         // ----
-        // Prepares the strings
+        // Adds '-' or ' '
         // ----
 
-        // Allocates the memory
-        result = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(1, 0)));
-
-        // Adds the zero termination char
-        result[0] = '\0';
-
-        // ----
-        // Appends the code
-        // ----
-
-        // Allocates small buffer
-        temp = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(3, 0)));
-
-        // Turns the int to an code
-        sprintf(&temp[0], "%d", code);
-
-        // Appends the buffer
-        strcat(&result[0], temp);
-
-        // ----
-        // Appends the space or dash
-        // ----
-
-        // Checks if there is an param, and an space needs to be appended
         if (param != nullptr && listParams == nullptr) strcat(&result[0], " ");
         else if (listParams != nullptr) strcat(&result[0], "-");
 
         // ----
-        // Appends the message based on the code
+        // Adds params if there
         // ----
 
-        if (param != nullptr) strcat(&result[0], &param[0]);
+        // Prepares an param value
+        if (param == nullptr) param = "No message specified";
 
-        return result;
+        // Resizing the buffer, plus two for <CR><LF>
+        resultSize += strlen(&param[0]) + 2;
+        result = reinterpret_cast<char *>(realloc(&result[0], resultSize));
 
+        // Concats the params
+        strcat(&result[0], &param[0]);
 
         // ----
-        // Adds ESMTP options if needed
+        // Adds arguments if required
         // ----
 
         // Checks if any arguments need to be added
-        if (listParamsN > 0)
+        if (listParamsN > 0 && listParams != nullptr)
         {
             // Adds the <CR><LF>
             strcat(&result[0], "\r\n");
 
-            // Loops over the params
+            // Loops over the arguments
             for (char i = 0; i < listParamsN; i++)
             {
-                // Adds the code
-                strcat(&result[0], &temp[0]);
 
-                // Checks if there needs to be added an dash or space
-                if (i+1 == listParamsN) strcat(&result[0], " ");
-                else strcat(&result[0], "-");
+                // Resizing the buffer, for the code, one dash and two for <CR><LF>
+                resultSize += strlen(listParams[i]) + 6;
+                result = reinterpret_cast<char *>(realloc(&result[0], resultSize));
 
-                // Appends the params
-                strcat(&result[0], &listParams[i][0]);
+                // Appends the code
+                strcat(&result[0], &buffer[0]);
 
-                // Appends <CR><LF>
+                // Checks if dash or space needs to be appended
+                if (i+1 != listParamsN) strcat(&result[0], "-");
+                else strcat(&result[0], " ");
+
+                // Appends the param
+                strcat(&result[0], listParams[i]);
+                // Appends the <CR><LF>
                 strcat(&result[0], "\r\n");
             }
-        } else strcat(result, "\r\n");
-
-        // ----
-        // Frees
-        // ----
-
-        // Frees the buffer
-        free(temp);
-
-        // ----
-        // Returns the result
-        // ----
+        } else strcat(&result[0], "\r\n");
 
         return result;
-        */
     }
 };

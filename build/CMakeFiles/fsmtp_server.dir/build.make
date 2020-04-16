@@ -79,12 +79,12 @@ fsmtp_server_EXTERNAL_OBJECTS =
 
 fsmtp_server: CMakeFiles/fsmtp_server.dir/main.cpp.o
 fsmtp_server: CMakeFiles/fsmtp_server.dir/build.make
-fsmtp_server: libflib.a
 fsmtp_server: libmailer.a
 fsmtp_server: libserver.a
 fsmtp_server: libdb.a
 fsmtp_server: liblogger.a
 fsmtp_server: libmodels.a
+fsmtp_server: libflib.a
 fsmtp_server: CMakeFiles/fsmtp_server.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/media/skywa04885/Main/Projects/C/fsmtp-server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable fsmtp_server"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/fsmtp_server.dir/link.txt --verbose=$(VERBOSE)

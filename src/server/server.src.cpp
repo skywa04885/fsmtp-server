@@ -499,7 +499,11 @@ namespace Fannst::FSMTPServer::Server
                     break;
                 }
 
-                // The help command
+                // Handles 'HELP'
+                case ServerCommand::SMTPServerCommand::HELP: {
+                    Responses::handleHelp(&sock_fd, ssl);
+                    break;
+                }
 
                 // Command not found
                 default: {

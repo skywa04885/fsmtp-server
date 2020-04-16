@@ -3,4 +3,5 @@
 
 CMakeFiles/flib.dir/src/flib/strings.cpp.o: ../src/flib/strings.cpp
 CMakeFiles/flib.dir/src/flib/strings.cpp.o: ../src/flib/strings.hpp
+CMakeFiles/flib.dir/src/flib/strings.cpp.o: ../src/pre.hpp
 

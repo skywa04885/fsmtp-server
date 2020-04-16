@@ -9,6 +9,7 @@ CMakeFiles/server.dir/src/parsers/mail-parser.src.cpp.o: ../src/pre.hpp
 CMakeFiles/server.dir/src/queued-email.src.cpp.o: ../src/queued-email.src.cpp
 CMakeFiles/server.dir/src/queued-email.src.cpp.o: ../src/queued-email.src.hpp
 
+CMakeFiles/server.dir/src/server/commands.src.cpp.o: ../src/flib/strings.hpp
 CMakeFiles/server.dir/src/server/commands.src.cpp.o: ../src/pre.hpp
 CMakeFiles/server.dir/src/server/commands.src.cpp.o: ../src/server/commands.src.cpp
 CMakeFiles/server.dir/src/server/commands.src.cpp.o: ../src/server/commands.src.hpp

@@ -74,4 +74,4 @@ add_library(
 )
 
 add_executable(fsmtp_server main.cpp)
-target_link_libraries(fsmtp_server flib mailer server db logger models -lpthread -lfannst_libcompose -lfannst_libencoding -lcassandra -lresolv -lssl -lcrypto)
+target_link_libraries(fsmtp_server mailer server db logger models flib -lpthread -lfannst_libcompose -lfannst_libencoding -lcassandra -lresolv -lssl -lcrypto)

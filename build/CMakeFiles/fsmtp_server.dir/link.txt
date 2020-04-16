@@ -1,1 +1,1 @@
-/usr/bin/c++    -rdynamic CMakeFiles/fsmtp_server.dir/main.cpp.o  -o fsmtp_server libflib.a libmailer.a libserver.a libdb.a liblogger.a libmodels.a -lpthread -lfannst_libcompose -lfannst_libencoding -lcassandra -lresolv -lssl -lcrypto 
+/usr/bin/c++    -rdynamic CMakeFiles/fsmtp_server.dir/main.cpp.o  -o fsmtp_server libmailer.a libserver.a libdb.a liblogger.a libmodels.a libflib.a -lpthread -lfannst_libcompose -lfannst_libencoding -lcassandra -lresolv -lssl -lcrypto 

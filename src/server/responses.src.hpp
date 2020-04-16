@@ -181,6 +181,14 @@ namespace Fannst::FSMTPServer::Responses
         free(message);
     }
 
+    void handleHelp(int *soc, SSL *ssl)
+    {
+        // Sends the response message
+        char *message = ServerCommand::gen(214, "Please visit https://software.fannst.nl for basic help, the Github repository is https://github.com/skywa04885/fsmtp-server", nullptr, 0);
+        write(soc, ssl, message, strlen(message));
+        free(message);
+    }
+
     bool handleRcptTo(int *soc, SSL *ssl, const char *args, Models::Email &email, Server::ConnPhasePT &phase,
                       CassSession *cassSession)
     {
@@ -291,7 +299,7 @@ namespace Fannst::FSMTPServer::Responses
         } else if (rc == -2)
         {
             // Sends the response message
-            char *message = ServerCommand::gen(551, "", nullptr, 0);
+            char *message = ServerCommand::gen(551, "User not local", nullptr, 0);
             write(soc, ssl, message, strlen(message));
             free(message);
 
