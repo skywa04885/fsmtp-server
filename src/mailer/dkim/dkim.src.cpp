@@ -140,6 +140,55 @@ namespace Fannst::FSMTPServer::DKIM {
         DEBUG_ONLY(print << "Finished body splitter !" << Logger::ConsoleOptions::ENDL)
 
         // ----
+        // Starts the canonicalization of the body
+        // ----
+
+        char *canBodyRet = nullptr;
+        DEBUG_ONLY(print << "Starting body canonicalization ..." << Logger::ConsoleOptions::ENDL)
+
+        // Canonicalizes the section
+        canonicalizeBodyRelaxed(&bodyRet[0], &canBodyRet);
+        DEBUG_ONLY(std::cout << '\'' << bodyRet << "\'" << std::endl)
+
+        // Calculates the hash value
+        char *bodyHash = nullptr;
+        OpenSSL::sha256base64(&canBodyRet[0], &bodyHash);
+        DEBUG_ONLY(std::cout << bodyHash << std::endl)
+
+        // Adds the part to the final array
+        sigParts[8] = buildSigPart("h", "date:message-id:from:to:subject");
+        sigParts[9] = buildSigPart("bh", bodyHash);
+
+        // ----
+        // Before header canonicalization, add the dkim without b data
+        // ----
+
+        // Gets the current header length, so we can leter subtract the last not required part
+        std::size_t hLenWithoutDKIM = strlen(&headerRet[0]);
+
+        // Adds the signature part
+        sigParts[10] = buildSigPart("b", "");
+
+        // Creates the temp res
+        char *sig = nullptr;
+        formatSignature(sigParts, &sig, false);
+
+        // Appends to the result headers
+        {
+            // Gets the current length
+            std::size_t tl = strlen(&headerRet[0]);
+
+            // Resizes the headers
+            tl += strlen(&sig[0]) + 2 + 16;
+            headerRet = reinterpret_cast<char *>(realloc(&headerRet[0], tl));
+
+            // Appends the result, with <CRLF>
+            strcat(&headerRet[0], "DKIM-Signature: ");
+            strcat(&headerRet[0], &sig[0]);
+            strcat(&headerRet[0], "\r\n");
+        }
+
+        // ----
         // Starts the canonicalization of the headers
         // ----
 
@@ -159,47 +208,37 @@ namespace Fannst::FSMTPServer::DKIM {
         DEBUG_ONLY(print << "Finished header canonicalization !" << Logger::ConsoleOptions::ENDL)
         DEBUG_ONLY(std::cout << canHeadersRet << std::endl)
 
-        // ----
-        // Starts the canonicalization of the body
-        // ----
+        // Signs the headers
+        char *headerSigRet = nullptr;
+        OpenSSL::rsaSha256genSig(canHeadersRet, config->d_PKey, &headerSigRet);
 
-        char *canBodyRet = nullptr;
-        DEBUG_ONLY(print << "Starting body canonicalization ..." << Logger::ConsoleOptions::ENDL)
+        DEBUG_ONLY(print << "Generated signature !" << Logger::ConsoleOptions::ENDL)
+        DEBUG_ONLY(std::cout << "\033[36m'" << headerSigRet << "'\033[0m" << std::endl)
 
-        // ----
-        // Generates the body hash
-        // ----
-
-        // Canonicalizes the section
-        canonicalizeBodyRelaxed(&bodyRet[0], &canBodyRet);
-        std::cout << '\'' << bodyRet << "\'" << std::endl;
-
-        // Calculates the hash value
-        char *bodyHash = nullptr;
-        OpenSSL::sha256base64(&canBodyRet[0], &bodyHash);
-        std::cout << bodyHash << std::endl;
-
-        // Adds the part to the final array
-        sigParts[8] = buildSigPart("h", "date:message-id:from:to:subject");
-        sigParts[9] = buildSigPart("bh", bodyHash);
-        sigParts[10] = buildSigPart("b", "AAA==");
+        // Sets the parameter
+        sigParts[10] = buildSigPart("b", headerSigRet);
 
         // ----
         // Creates the result
         // ----
 
-        char *sig = nullptr;
-        formatSignature(sigParts, &sig);
+        formatSignature(sigParts, &sig, true);
 
         DEBUG_ONLY(print << "Created signature: " << Logger::ConsoleOptions::ENDL)
-        std::cout << sig << std::endl;
+        DEBUG_ONLY(std::cout << sig << std::endl)
+
+        // ----
+        // Restores the old headers
+        // ----
+
+        headerRet[hLenWithoutDKIM] = '\0';
 
         // ----
         // Appends the signature to the result
         // ----
 
         *sigRet = reinterpret_cast<char *>(malloc(
-                strlen(&sig[0]) + strlen(&bodyRet[0]) + strlen(&headerRet[0]) + 6 + 15
+                strlen(&sig[0]) + strlen(&bodyRet[0]) + strlen(&headerRet[0]) + 6 + 16
                 ));
         (*sigRet)[0] = '\0';
 
@@ -218,6 +257,7 @@ namespace Fannst::FSMTPServer::DKIM {
         free(canBodyRet);
         free(bodyHash);
         free(sig);
+        free(headerSigRet);
 
         return 0;
     }
@@ -228,7 +268,7 @@ namespace Fannst::FSMTPServer::DKIM {
      * @param ret
      * @return
      */
-    int formatSignature(char *parts[FANNST_DKIM_TOTAL_PARTS], char **ret)
+    int formatSignature(char *parts[FANNST_DKIM_TOTAL_PARTS], char **ret, bool nl)
     {
         // Allocates result memory
         std::size_t retBufferSize = 1;
@@ -236,9 +276,10 @@ namespace Fannst::FSMTPServer::DKIM {
         (*ret)[0] = '\0';
 
         // Starts looping over the parts
-        const char *curr = nullptr;
+        char *curr = nullptr;
         std::size_t cLen = 0;
         std::size_t cStringLen;
+        bool clearTempString = false;
         for (std::size_t i = 0; i < FANNST_DKIM_TOTAL_PARTS; i++)
         {
             // Gets the current part
@@ -250,16 +291,54 @@ namespace Fannst::FSMTPServer::DKIM {
             // Checks if the line itself is longer then max len, if so format it first
             // ----
 
-            if (cStringLen > FANNST_DKIM_MAX_SIG_LL)
+            if (cStringLen > FANNST_DKIM_MAX_SIG_LL && nl)
             { // Pre-process the data
 
+                // Allocates the memory
+                std::size_t tStringSize = strlen(&curr[0]);
+                char *tString = reinterpret_cast<char *>(malloc(tStringSize));
+                tString[0] = '\0';
+
+                // Gets the memory address of curr without the A <EQ>
+                char *c = &curr[0];
+
+                // Starts looping
+                std::size_t ct = 0;
+                while (*c != '\0')
+                {
+                    // Checks if <CRLF> needs to be added
+                    if (ct > FANNST_DKIM_MAX_SIG_LL)
+                    {
+                        // Resize the buffer
+                        tStringSize += 2 + 5;
+                        tString = reinterpret_cast<char *>(realloc(&tString[0], tStringSize));
+
+                        ct = 0;
+
+                        // Concats the strings
+                        strcat(&tString[0], "\r\n     ");
+                    }
+
+                    // Concat the string
+                    strncat(&tString[0], c, 1);
+
+                    // Goes to the next char
+                    c++;
+                    // Increments the char
+                    ct++;
+                }
+
+                // Stores the result
+                curr = &tString[0];
+                cStringLen = strlen(&tString[0]);
+                clearTempString = true;
             }
 
             // ----
             // Checks if it fits in the line
             // ----
 
-            if (cLen + cStringLen > FANNST_DKIM_MAX_SIG_LL)
+            if (cLen + cStringLen > FANNST_DKIM_MAX_SIG_LL && nl)
             { // Append on new line
 
                 // Sets the result buffer size
@@ -291,7 +370,16 @@ namespace Fannst::FSMTPServer::DKIM {
 
             // Increments the length
             cLen += cStringLen;
+
+            // If required, clears the temp string
+            if (clearTempString) free(curr);
         }
+
+        // ----
+        // Removes the last "; "
+        // ----
+
+        (*ret)[strlen(&(*ret)[0]) - 2] = '\0';
 
         return 0;
     }

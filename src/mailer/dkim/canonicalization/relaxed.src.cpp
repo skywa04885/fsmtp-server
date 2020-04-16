@@ -99,6 +99,13 @@ namespace Fannst::FSMTPServer::DKIM {
 
             // Checks if it matches
             if (strcmp(&cTmp[0], "date") == 0) return true;
+
+            // Copies the string
+            memcpy(&cTmp[0], &h[0], 14);
+            cTmp[14] = '\0';
+
+            // Checks if it matches
+            if (strcmp(&cTmp[0], "dkim-signature") == 0) return true;
         } else if (h[0] == 'k')
         {
             // Copies the memory
@@ -118,30 +125,6 @@ namespace Fannst::FSMTPServer::DKIM {
         }
 
         return false;
-    }
-
-    /**
-     * Gets the index of an char
-     * @param a
-     * @param b
-     * @return
-     */
-    inline int findChar(char *a, char b)
-    {
-        // Creates the result
-        int res = 0;
-
-        // Infinite loop
-        for (;;)
-        {
-            // Checks if we should break
-            if (*a == '\0') return -1;
-            else if (b == *a) return res;
-
-            // Goes to the next char in memory
-            a++;
-            res++;
-        }
     }
 
     /**

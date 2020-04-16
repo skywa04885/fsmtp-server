@@ -165,10 +165,10 @@ namespace Fannst
         config.d_ExpireDate = a + 600;
         config.d_SignDate = a;
         config.d_KeyS = "default";
+        config.d_PKey = "../keys/dkim/private-key.pem";
 
         char *sigRet = nullptr;
         Fannst::FSMTPServer::DKIM::sign(messageBody.c_str(), &sigRet, &config);
-        std::cout << sigRet << std::endl;
 
         // ----
         // Creates the logger if enabled

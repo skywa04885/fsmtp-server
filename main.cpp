@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
     options.o_HTML = "<h1 class=\"test\">Hello World</h1>";
     options.o_Text = "Hello World";
     options.o_From.emplace_back("Luke Rieff", "luke.rieff@fannst.nl");
-    options.o_To.emplace_back("Luke A.C.A. Rieff", "test-11664b56@appmaildev.com");
+    options.o_To.emplace_back("Luke A.C.A. Rieff", "luke.rieff@gmail.com");
     options.o_Subject = "Hello World Test";
     options.o_Domain = "fannst.nl";
     options.o_DKIMKeyFile = "../keys/dkim/private-key.pem";

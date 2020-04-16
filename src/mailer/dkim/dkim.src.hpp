@@ -37,6 +37,7 @@ namespace Fannst::FSMTPServer::DKIM
         long d_ExpireDate{};                // Expire time in MS since last epoch
         const char *d_Domain{nullptr};      // The domain name
         const char *d_KeyS{nullptr};        // The domain key selector
+        const char *d_PKey{nullptr};        // Path of private key
 
         // The default set parameters
         DKIMCanAlgorithms d_Ago{
@@ -50,7 +51,7 @@ namespace Fannst::FSMTPServer::DKIM
      * @param ret
      * @return
      */
-    int formatSignature(char *parts[FANNST_DKIM_TOTAL_PARTS], char **ret);
+    int formatSignature(char *parts[FANNST_DKIM_TOTAL_PARTS], char **ret, bool nl);
 
     /**
      * Builds an signature part
@@ -101,5 +102,36 @@ namespace Fannst::FSMTPServer::DKIM
          * @param hRet
          */
         void sha256base64(const char *raw, char **hRet);
+
+        /**
+         * Performs RSA-SHA256 Signature, and returns the base 64 version
+         * @param raw
+         * @param hRet
+         */
+        int rsaSha256genSig(const char *raw, const char *pKeyFile, char **hRet);
+    }
+
+    /**
+     * Gets the index of an char
+     * @param a
+     * @param b
+     * @return
+     */
+    inline int findChar(char *a, char b)
+    {
+        // Creates the result
+        int res = 0;
+
+        // Infinite loop
+        for (;;)
+        {
+            // Checks if we should break
+            if (*a == '\0') return -1;
+            else if (b == *a) return res;
+
+            // Goes to the next char in memory
+            a++;
+            res++;
+        }
     }
 }
