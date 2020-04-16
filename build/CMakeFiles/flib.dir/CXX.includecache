@@ -1,0 +1,18 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/media/skywa04885/Main/Projects/C/fsmtp-server/src/flib/strings.cpp
+strings.hpp
+/media/skywa04885/Main/Projects/C/fsmtp-server/src/flib/strings.hpp
+
+/media/skywa04885/Main/Projects/C/fsmtp-server/src/flib/strings.hpp
+malloc.h
+-
+cstddef
+-
+

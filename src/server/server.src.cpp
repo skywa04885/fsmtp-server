@@ -54,9 +54,6 @@ namespace Fannst::FSMTPServer::Server
             return -1;
         }
 
-        // Sets the server to be non-blocking
-        fcntl(serverSock, F_SETFL, O_NONBLOCK);
-
         // Prints that the socket has been created
         DEBUG_ONLY(print << "Socket has been created." << Logger::ConsoleOptions::ENDL)
 
@@ -98,13 +95,6 @@ namespace Fannst::FSMTPServer::Server
 
             // Accepts the mailer
             clientSocket = accept(serverSock, (struct sockaddr *)&client, (socklen_t *)&sockaddrSize);
-
-            // Checks if the mailer was successfully accepted
-            if (clientSocket < 0)
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                continue;
-            }
 
             // Sets the socket timeout
             struct timeval timeout{};
@@ -239,10 +229,13 @@ namespace Fannst::FSMTPServer::Server
 
         {
             // Generates the message
-            const char *message = ServerCommand::gen(220, "smtp.fannst.nl", nullptr, 0);
+            char *message = ServerCommand::gen(220, "smtp.fannst.nl - ESMTP Ready", nullptr, 0);
 
             // Writes the message
-            Responses::write(&sock_fd, nullptr, message, strlen(message));
+            Responses::write(&sock_fd, nullptr, message, strlen(&message[0]));
+
+            // Deletes the message
+            free(message);
         }
 
         // ----
@@ -287,6 +280,7 @@ namespace Fannst::FSMTPServer::Server
 
         for (;;)
         {
+
             // ----
             // Prepares the buffers
             // ----
@@ -384,10 +378,6 @@ namespace Fannst::FSMTPServer::Server
             // ----
             // Checks how the server should respond, and process the operation
             // ----
-
-            // pvY8L676zvMaThUcXyXwgZMPl3GJnPoixKLgK+U99bk=
-            // pvY8L676zvMaThUcXyXwgZMPl3GJnPoixKLgK+U99bk=
-            // pvY8L676zvMaThUcXyXwgZMPl3GJnPoixKLgK+U99bk=
 
             switch (currentCommand)
             {

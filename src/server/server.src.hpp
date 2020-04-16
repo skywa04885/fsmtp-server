@@ -28,6 +28,7 @@
 #include "../parsers/mail-parser.src.hpp"
 #include "../user.src.hpp"
 #include "../pre.hpp"
+#include "../flib/strings.hpp"
 
 #define MAX_THREADS 6
 

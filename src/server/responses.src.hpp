@@ -56,9 +56,9 @@ namespace Fannst::FSMTPServer::Responses
      */
     void preContextProceed(int *soc, SSL *ssl)
     {
-        const char *message = ServerCommand::gen(250, "OK Proceed", nullptr, 0);
+        char *message = ServerCommand::gen(250, "OK Proceed", nullptr, 0);
         write(soc, ssl, message, strlen(message));
-        delete message;
+        free(message);
     }
 
     /**
@@ -68,9 +68,9 @@ namespace Fannst::FSMTPServer::Responses
      */
     void preContextBadSequence(int *soc, SSL *ssl, const char *reqMsg)
     {
-        const char *message = ServerCommand::gen(503, reqMsg, nullptr, 0);
+        char *message = ServerCommand::gen(503, reqMsg, nullptr, 0);
         write(soc, ssl, message, strlen(message));
-        delete message;
+        free(message);
     }
 
     /**
@@ -79,9 +79,9 @@ namespace Fannst::FSMTPServer::Responses
      */
     void syntaxError(int *soc, SSL *ssl)
     {
-        const char *message = ServerCommand::gen(501, "", nullptr, 0);
+        char *message = ServerCommand::gen(501, "Syntax error", nullptr, 0);
         write(soc, ssl, message, strlen(message));
-        delete message;
+        free(message);
     }
 
     // ----
@@ -139,9 +139,9 @@ namespace Fannst::FSMTPServer::Responses
         if (args == nullptr || strlen(args) == 0)
         {
             // Sends the response
-            const char *message = ServerCommand::gen(501, "Empty EHLO/HELO command not allowed, closing connection.", nullptr, 0);
+            char *message = ServerCommand::gen(501, "Empty EHLO/HELO command not allowed, closing connection.", nullptr, 0);
             write(soc, ssl, message, strlen(message));
-            delete message;
+            free(message);
 
             // Closes the connection
             return false;
@@ -162,9 +162,9 @@ namespace Fannst::FSMTPServer::Responses
         // ----
 
         const char *argList[] {"STARTTLS", "HELP"};
-        const char *message = ServerCommand::gen(250, &temp[0], argList, 2);
+        char *message = ServerCommand::gen(250, &temp[0], argList, 2);
         write(soc, ssl, message, strlen(message));
-        delete message;
+        free(message);
 
         // Updates the phase
         phase = Server::ConnPhasePT::PHASE_PT_HELLO;
@@ -176,9 +176,9 @@ namespace Fannst::FSMTPServer::Responses
     void handleQuit(int *soc, SSL *ssl)
     {
         // Sends the response message
-        const char *message = ServerCommand::gen(221, "", nullptr, 0);
+        char *message = ServerCommand::gen(221, "Goodbye !", nullptr, 0);
         write(soc, ssl, message, strlen(message));
-        delete message;
+        free(message);
     }
 
     bool handleRcptTo(int *soc, SSL *ssl, const char *args, Models::Email &email, Server::ConnPhasePT &phase,
@@ -223,10 +223,10 @@ namespace Fannst::FSMTPServer::Responses
             PREP_ERROR("Refused parsing", "Address longer then 256 chars, preventing stack overflow ..")
 
             // Sends the error message
-            const char *message = ServerCommand::gen(471,
+            char *message = ServerCommand::gen(471,
                                                      "Address too large, would cause stack overflow ..", nullptr, 0);
             write(soc, ssl, message, strlen(message));
-            delete message;
+            free(message);
 
             // Returns false
             return false;
@@ -259,10 +259,10 @@ namespace Fannst::FSMTPServer::Responses
         if (username == nullptr || domain == nullptr)
         {
             // Sends the response message
-            const char *message = ServerCommand::gen(471, "could not parse address ..",
+            char *message = ServerCommand::gen(471, "could not parse address ..",
                                                      nullptr, 0);
             write(soc, ssl, message, strlen(message));
-            delete message;
+            free(message);
 
             // Returns that there was an error
             return false;
@@ -281,19 +281,19 @@ namespace Fannst::FSMTPServer::Responses
         if (rc == -1)
         {
             // Sends the response message
-            const char *message = ServerCommand::gen(471, "Could not perform cassandra query ..",
+            char *message = ServerCommand::gen(471, "Could not perform cassandra query ..",
                                                      nullptr, 0);
             write(soc, ssl, message, strlen(message));
-            delete message;
+            free(message);
 
             // Returns false
             return false;
         } else if (rc == -2)
         {
             // Sends the response message
-            const char *message = ServerCommand::gen(551, "", nullptr, 0);
+            char *message = ServerCommand::gen(551, "", nullptr, 0);
             write(soc, ssl, message, strlen(message));
-            delete message;
+            free(message);
 
             // Returns false
             return false;

@@ -1,0 +1,2 @@
+/usr/bin/ar qc libflib.a  CMakeFiles/flib.dir/src/flib/strings.cpp.o
+/usr/bin/ranlib libflib.a

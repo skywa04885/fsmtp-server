@@ -1,0 +1,9 @@
+/media/skywa04885/Main/Projects/C/fsmtp-server/build/CMakeFiles/rebuild_cache.dir
+/media/skywa04885/Main/Projects/C/fsmtp-server/build/CMakeFiles/edit_cache.dir
+/media/skywa04885/Main/Projects/C/fsmtp-server/build/CMakeFiles/fsmtp_server.dir
+/media/skywa04885/Main/Projects/C/fsmtp-server/build/CMakeFiles/db.dir
+/media/skywa04885/Main/Projects/C/fsmtp-server/build/CMakeFiles/models.dir
+/media/skywa04885/Main/Projects/C/fsmtp-server/build/CMakeFiles/logger.dir
+/media/skywa04885/Main/Projects/C/fsmtp-server/build/CMakeFiles/mailer.dir
+/media/skywa04885/Main/Projects/C/fsmtp-server/build/CMakeFiles/flib.dir
+/media/skywa04885/Main/Projects/C/fsmtp-server/build/CMakeFiles/server.dir

@@ -1,0 +1,2 @@
+/usr/bin/ar qc libserver.a  CMakeFiles/server.dir/src/server/commands.src.cpp.o CMakeFiles/server.dir/src/server/server.src.cpp.o CMakeFiles/server.dir/src/parsers/mail-parser.src.cpp.o CMakeFiles/server.dir/src/queued-email.src.cpp.o
+/usr/bin/ranlib libserver.a

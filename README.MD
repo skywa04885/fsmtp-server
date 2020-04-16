@@ -2,7 +2,13 @@
 
 # FSMTP Server
 
-Open source C++ SMTP Server
+Open source C++ SMTP Server, developed by [Fannst Software](https://software.fannst.nl)
+
+## Tested with, and worked
+
+* Outlook
+* Google Mail
+* Yahoo Mail
 
 ## Currently supporting
 
@@ -18,7 +24,7 @@ Open source C++ SMTP Server
 * Web API
 * Spam filters, using spamhaus
 * DKIM Verification
-* IMAP Server [ Not sure yet ]
+* IMAP Server \[ Not sure yet \]
 
 ## Dependencies
 

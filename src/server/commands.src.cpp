@@ -22,7 +22,7 @@ namespace Fannst::FSMTPServer::ServerCommand
         // Checks which command it is
         // ----
 
-        char *temp = reinterpret_cast<char *>(malloc(9));
+        char *temp = reinterpret_cast<char *>(malloc(16));
         int commandLen = 0;
         if (buf[0] == 'H' || buf[0] == 'E')
         {
@@ -173,93 +173,74 @@ namespace Fannst::FSMTPServer::ServerCommand
      * @param listParamsN
      * @return
      */
-    const char *gen(int code, const char *param, const char *listParams[], char listParamsN)
+    char *gen(int code, const char *param, const char *listParams[], char listParamsN)
     {
+        fcb result = nullptr;
+        fcb temp = nullptr;
 
         // ----
         // Prepares the strings
         // ----
 
-        // Prepares the final result
-        char *result = reinterpret_cast<char *>(malloc(sizeof(char) * (strlen(param) + 128)));
-        result[0] = '\0';               // Sets the string end, strcat will move this to the end
+        result = fcb_new(3);
 
-        // Result: Code + WS
-        char *temp = reinterpret_cast<char *>(malloc(sizeof(char) * 8));
+        // ----
+        // Appends the code
+        // ----
+
+        // Adds the code
+        fcb_strcat(result, code);
+
+        /*
+        char *result = nullptr;
+        char *temp = nullptr;
+
+        // ----
+        // Prepares the strings
+        // ----
+
+        // Allocates the memory
+        result = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(1, 0)));
+
+        // Adds the zero termination char
+        result[0] = '\0';
+
+        // ----
+        // Appends the code
+        // ----
+
+        // Allocates small buffer
+        temp = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(3, 0)));
+
+        // Turns the int to an code
         sprintf(&temp[0], "%d", code);
+
+        // Appends the buffer
         strcat(&result[0], temp);
 
+        // ----
+        // Appends the space or dash
+        // ----
+
         // Checks if there is an param, and an space needs to be appended
-        if (param != nullptr && listParams == nullptr) strcat(result, " ");
-        else if (listParams != nullptr) strcat(result, "-");
+        if (param != nullptr && listParams == nullptr) strcat(&result[0], " ");
+        else if (listParams != nullptr) strcat(&result[0], "-");
 
         // ----
         // Appends the message based on the code
         // ----
 
-        switch (code)
-        {
-            // Introduction
-            case 220: {
-                // TODO: Fix so it will report back correct string for start tls continue
-                if (param == nullptr) strcat(&result[0], "UNKNOWN");
-                else strcat(&result[0], &param[0]);
-                strcat(result, " - ESMTP service ready");
-                break;
-            };
-            // Continue, param based
-            case 250: {
-                if (param == nullptr) strcat(&result[0], "OK Proceed");
-                else strcat(&result[0], &param[0]);
-                break;
-            }
-            // Data intro
-            case 354: {
-                strcat(result, "End data with <CR><LF>.<CR><LF>");
-                break;
-            }
-            // Exit requested
-            case 221: {
-                strcat(result, "Bye");
-                break;
-            }
-            // Syntax error
-            case 501: {
-                if (param == nullptr) strcat(result, "Syntax error.");
-                else strcat(result, &param[0]);
-                break;
-            }
-            // Bad sequence
-            case 503: {
-                strcat(result ,"Bad sequence, send ");
-                strcat(result, param);
-                strcat(result," first");
-                break;
-            }
-            // Mail server error
-            case 471: {
-                strcat(result, "Mail server error, ");
-                strcat(result, param);
-                break;
-            }
-            // User not found
-            case 551: {
-                strcat(result, "User not local");
-                break;
-            }
-            // Programmer messed up
-            default: {
-                strcat(result, "Server does not recognize current code");
-                break;
-            }
-        }
+        if (param != nullptr) strcat(&result[0], &param[0]);
+
+        return result;
+
 
         // ----
         // Adds ESMTP options if needed
         // ----
 
         // Checks if any arguments need to be added
-        if (listParams != nullptr)
+        if (listParamsN > 0)
         {
             // Adds the <CR><LF>
             strcat(&result[0], "\r\n");
@@ -267,20 +248,33 @@ namespace Fannst::FSMTPServer::ServerCommand
             // Loops over the params
             for (char i = 0; i < listParamsN; i++)
             {
+                // Adds the code
                 strcat(&result[0], &temp[0]);
+
+                // Checks if there needs to be added an dash or space
                 if (i+1 == listParamsN) strcat(&result[0], " ");
                 else strcat(&result[0], "-");
+
+                // Appends the params
                 strcat(&result[0], &listParams[i][0]);
+
+                // Appends <CR><LF>
                 strcat(&result[0], "\r\n");
             }
-        } else
-        { // Just add <CR><LF>
+        } else strcat(result, "\r\n");
 
-            // Adds the <CR><LF>
-            strcat(result, "\r\n");
-        }
+        // ----
+        // Frees
+        // ----
 
+        // Frees the buffer
+        free(temp);
+
+        // ----
         // Returns the result
-        return const_cast<const char *>(result);
+        // ----
+
+        return result;
+        */
     }
 };

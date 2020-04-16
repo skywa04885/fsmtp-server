@@ -12,7 +12,11 @@
 #include <sstream>
 #include <vector>
 #include <tuple>
+
 #include <memory.h>
+
+#include "../pre.hpp"
+#include "../flib/strings.hpp"
 
 namespace Fannst::FSMTPServer::ServerCommand
 {
@@ -42,7 +46,7 @@ namespace Fannst::FSMTPServer::ServerCommand
      * @param listParamsN
      * @return
      */
-    const char *gen(int code, const char *param, const char *listParams[], char listParamsN);
+    char *gen(int code, const char *param, const char *listParams[], char listParamsN);
 
     /**
      * Converts command enum to string
