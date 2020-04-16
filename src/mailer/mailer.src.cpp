@@ -167,10 +167,8 @@ namespace Fannst
         config.d_KeyS = "default";
 
         char *sigRet = nullptr;
-        Fannst::FSMTPServer::DKIM::sign(messageBody.c_str(), sigRet, &config);
+        Fannst::FSMTPServer::DKIM::sign(messageBody.c_str(), &sigRet, &config);
         std::cout << sigRet << std::endl;
-
-        return 0;
 
         // ----
         // Creates the logger if enabled
@@ -430,7 +428,7 @@ namespace Fannst
 
                 case MailerState::MST_DATA_START:
                 {
-                    if (!Fannst::FSMTPClient::SocketHandler::handleDataTransmission(&sock_fd, ssl, messageBody.c_str(), messageBody.length()))
+                    if (!Fannst::FSMTPClient::SocketHandler::handleDataTransmission(&sock_fd, ssl, sigRet, strlen(&sigRet[0])))
                         goto end;
 
                     break;
@@ -452,6 +450,9 @@ namespace Fannst
 
     end:
         shutdown(sock_fd, SHUT_RDWR);
+
+        // Clears signature
+        free(sigRet);
 
         // Clears the SSL stuff
         if (ssl != nullptr)

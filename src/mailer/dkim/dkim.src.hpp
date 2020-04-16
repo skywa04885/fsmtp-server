@@ -20,7 +20,8 @@
 #include "../../logger.src.hpp"
 #include "../../pre.hpp"
 
-#define FANNST_DKIM_TOTAL_PARTS 10
+#define FANNST_DKIM_TOTAL_PARTS 11
+#define FANNST_DKIM_MAX_SIG_LL 66
 
 namespace Fannst::FSMTPServer::DKIM
 {
@@ -49,7 +50,7 @@ namespace Fannst::FSMTPServer::DKIM
      * @param ret
      * @return
      */
-    int formatSignature(const char *parts[FANNST_DKIM_TOTAL_PARTS], char **ret);
+    int formatSignature(char *parts[FANNST_DKIM_TOTAL_PARTS], char **ret);
 
     /**
      * Builds an signature part
@@ -65,7 +66,7 @@ namespace Fannst::FSMTPServer::DKIM
      * @param config
      * @return
      */
-    int sign(const char *raw, char *sigRet, const DKIMHeaderConfig *config);
+    int sign(const char *raw, char **sigRet, const DKIMHeaderConfig *config);
 
     /**
      * Splits MIME message into two sections

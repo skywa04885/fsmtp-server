@@ -316,7 +316,7 @@ namespace Fannst::FSMTPServer::DKIM {
         // Multiplies i by two, so we get the amount of chars to remove from the string end
         i *= 2;
 
-        // Substracts it from the string
+        // Subtracts it from the string
         (*ret)[strlen(&(*ret)[0]) - i] = '\0';
 
         // ----

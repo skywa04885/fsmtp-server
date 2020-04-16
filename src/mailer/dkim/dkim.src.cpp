@@ -47,7 +47,7 @@ namespace Fannst::FSMTPServer::DKIM {
      * @param config
      * @return
      */
-    int sign(const char *raw, char *sigRet, const DKIMHeaderConfig *config)
+    int sign(const char *raw, char **sigRet, const DKIMHeaderConfig *config)
     {
         std::cout << raw << std::endl;
 
@@ -180,9 +180,35 @@ namespace Fannst::FSMTPServer::DKIM {
         std::cout << bodyHash << std::endl;
 
         // Adds the part to the final array
-        sigParts[8] = buildSigPart("h", "date:message-id:from:to:suject");
+        sigParts[8] = buildSigPart("h", "date:message-id:from:to:subject");
         sigParts[9] = buildSigPart("bh", bodyHash);
         sigParts[10] = buildSigPart("b", "AAA==");
+
+        // ----
+        // Creates the result
+        // ----
+
+        char *sig = nullptr;
+        formatSignature(sigParts, &sig);
+
+        DEBUG_ONLY(print << "Created signature: " << Logger::ConsoleOptions::ENDL)
+        std::cout << sig << std::endl;
+
+        // ----
+        // Appends the signature to the result
+        // ----
+
+        *sigRet = reinterpret_cast<char *>(malloc(
+                strlen(&sig[0]) + strlen(&bodyRet[0]) + strlen(&headerRet[0]) + 6 + 15
+                ));
+        (*sigRet)[0] = '\0';
+
+        // Appends the strings
+        strcat(&(*sigRet)[0], &headerRet[0]);
+        strcat(&(*sigRet)[0], "DKIM-Signature: ");
+        strcat(&(*sigRet)[0], &sig[0]);
+        strcat(&(*sigRet)[0], "\r\n\r\n");
+        strcat(&(*sigRet)[0], &bodyRet[0]);
 
         // ----
         // Frees the memory
@@ -191,6 +217,7 @@ namespace Fannst::FSMTPServer::DKIM {
         free(canHeadersRet);
         free(canBodyRet);
         free(bodyHash);
+        free(sig);
 
         return 0;
     }
@@ -201,9 +228,70 @@ namespace Fannst::FSMTPServer::DKIM {
      * @param ret
      * @return
      */
-    int formatSignature(const char *parts[FANNST_DKIM_TOTAL_PARTS], char **ret)
+    int formatSignature(char *parts[FANNST_DKIM_TOTAL_PARTS], char **ret)
     {
+        // Allocates result memory
+        std::size_t retBufferSize = 1;
+        *ret = reinterpret_cast<char *>(malloc(1));
+        (*ret)[0] = '\0';
+
         // Starts looping over the parts
+        const char *curr = nullptr;
+        std::size_t cLen = 0;
+        std::size_t cStringLen;
+        for (std::size_t i = 0; i < FANNST_DKIM_TOTAL_PARTS; i++)
+        {
+            // Gets the current part
+            curr = parts[i];
+            // Gets the len
+            cStringLen = strlen(&curr[0]);
+
+            // ----
+            // Checks if the line itself is longer then max len, if so format it first
+            // ----
+
+            if (cStringLen > FANNST_DKIM_MAX_SIG_LL)
+            { // Pre-process the data
+
+            }
+
+            // ----
+            // Checks if it fits in the line
+            // ----
+
+            if (cLen + cStringLen > FANNST_DKIM_MAX_SIG_LL)
+            { // Append on new line
+
+                // Sets the result buffer size
+                retBufferSize += cStringLen + 8;
+                *ret = reinterpret_cast<char *>(realloc(&(*ret)[0], retBufferSize));
+
+                // Appends the strings
+                strcat(&(*ret)[0], "\r\n    ");
+                strcat(&(*ret)[0], &curr[0]);
+                strcat(&(*ret)[0], "; ");
+
+                // Sets the cLen to zero
+                cLen = 0;
+
+                continue;
+            }
+
+            // ----
+            // Appends on same line
+            // ----
+
+            // Sets the result buffer size
+            retBufferSize += cStringLen + 2;
+            *ret = reinterpret_cast<char *>(realloc(&(*ret)[0], retBufferSize));
+
+            // Appends the strings
+            strcat(&(*ret)[0], &curr[0]);
+            strcat(&(*ret)[0], "; ");
+
+            // Increments the length
+            cLen += cStringLen;
+        }
 
         return 0;
     }
