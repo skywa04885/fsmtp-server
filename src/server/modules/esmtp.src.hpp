@@ -34,7 +34,7 @@ namespace Fannst::FSMTPServer::ESMTPModules
          * @return
          */
         bool handleMailFrom(const int *soc, SSL *ssl, const char *args, Models::Email &email,
-                Server::ConnPhasePT &phasePt);
+                Server::ConnPhasePT &phasePt, Models::UserQuickAccess *pUserQuickAccess);
 
         /**
          * Handles the Hello command
@@ -73,6 +73,6 @@ namespace Fannst::FSMTPServer::ESMTPModules
          * @return
          */
         bool handleRcptTo(const int *soc, SSL *ssl, const char *args, Models::Email &email,
-                Server::ConnPhasePT &phasePt, CassSession *cassSession);
+                Server::ConnPhasePT &phasePt, CassSession *cassSession, Models::UserQuickAccess *pUserQuickAccess);
     };
 }

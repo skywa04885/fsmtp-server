@@ -69,11 +69,11 @@ R: 221 Goodbye !
 * ESMTP
 * ESMTP With STARTTLS
 * DKIM Signer
+* ESMTP Relaying
+* ESMTP Auth ( Plain only )
 
 ## Future support
 
-* ESMTP Relaying
-* ESMTP Auth
 * ESMTP, with pipelining
 * Web API
 * Spam filters, using spamhaus

@@ -11,7 +11,7 @@ namespace Fannst::FSMTPServer::ESMTPModules
 {
     namespace Auth
     {
-        bool handleAuth(const int *soc, SSL *ssl, const char *args, CassSession *cassSession)
+        bool handleAuth(const int *soc, SSL *ssl, const char *args, CassSession *cassSession, Models::UserQuickAccess **userQuickAccess)
         {
             SMTPAuthorizationProtocol protocol = SMTPAuthorizationProtocol::INVALID;
             std::size_t tl;
@@ -333,10 +333,10 @@ namespace Fannst::FSMTPServer::ESMTPModules
                 }
 
                 // Creates a new user quick access
-                Models::UserQuickAccess userQuickAccess{};
+                *userQuickAccess = new Models::UserQuickAccess{};
 
                 // Performs the query
-                rc1 = Models::UserQuickAccess::selectByDomainAndUsername(cassSession, domain, username, userQuickAccess);
+                rc1 = Models::UserQuickAccess::selectByDomainAndUsername(cassSession, domain, username, *(*userQuickAccess));
 
                 // ----
                 // Frees the memory
@@ -358,6 +358,11 @@ namespace Fannst::FSMTPServer::ESMTPModules
                             nullptr,0);
                     Responses::write(soc, ssl, &msg[0], strlen(&msg[0]));
                     delete(msg);
+
+                    // Clears and frees the userQuickAccess
+                    free(*userQuickAccess);
+                    *userQuickAccess = nullptr;
+
                     // Sets error code and goes to the end
                     rc = false;
                     goto handleAuthEnd;
@@ -369,6 +374,11 @@ namespace Fannst::FSMTPServer::ESMTPModules
                             nullptr,0);
                     Responses::write(soc, ssl, &msg[0], strlen(&msg[0]));
                     delete(msg);
+
+                    // Clears and frees the userQuickAccess
+                    free(*userQuickAccess);
+                    *userQuickAccess = nullptr;
+
                     // Sets error code and goes to the end
                     rc = false;
                     goto handleAuthEnd;
@@ -383,7 +393,7 @@ namespace Fannst::FSMTPServer::ESMTPModules
                 OpenSSL::sha256base64(&password[0], &hRet);
 
                 // Compares it against the password in the database
-                if (strcmp(&hRet[0], &userQuickAccess.u_Password[0]) != 0)
+                if (strcmp(&hRet[0], &(*userQuickAccess)->u_Password[0]) != 0)
                 {
                     // Sends the error
                     char *msg = ServerCommand::gen(530,

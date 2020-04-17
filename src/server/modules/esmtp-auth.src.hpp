@@ -32,6 +32,7 @@ namespace Fannst::FSMTPServer::ESMTPModules
 
     namespace Auth
     {
-        bool handleAuth(const int *soc, SSL *ssl, const char *args, CassSession *cassSession);
+        bool handleAuth(const int *soc, SSL *ssl, const char *args, CassSession *cassSession,
+                Models::UserQuickAccess **userQuickAccess);
     }
 }

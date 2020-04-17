@@ -22,8 +22,12 @@ namespace Fannst::FSMTPServer::ESMTPModules
          * @return
          */
         bool handleMailFrom(const int *soc, SSL *ssl, const char *args, Models::Email &email,
-                Server::ConnPhasePT &phasePt)
+                Server::ConnPhasePT &phasePt, Models::UserQuickAccess *pUserQuickAccess)
         {
+            // ----
+            // Verifies the data and sequence
+            // ----
+
             // Checks if the sequence is correct
             if (phasePt < Server::ConnPhasePT::PHASE_PT_HELLO)
             {
@@ -42,6 +46,10 @@ namespace Fannst::FSMTPServer::ESMTPModules
                 return false;
             }
 
+            // ----
+            // Parses the address
+            // ----
+
             // Parses the email address from the args, if invalid: send syntax error
             if (Parsers::parseAddress(args, email.m_TransportFrom) < 0)
             {
@@ -51,8 +59,32 @@ namespace Fannst::FSMTPServer::ESMTPModules
                 return false;
             }
 
-            // Checks if the sender is a person from Fannst, and possibly tries to relay message
-            // TODO: Relay check
+            // ----
+            // Checks if the sender is from fannst.nl, if so make sure he is authorized to do this
+            // ----
+
+            {
+                char *username = nullptr;
+                char *domain = nullptr;
+
+                // Parses the address
+                Parsers::splitAddress(&email.m_TransportFrom.e_Address[0], &username, &domain);
+
+                // Checks if it is an fannst sender
+                if (strcmp(&domain[0], "fannst.nl") == 0 && pUserQuickAccess == nullptr)
+                {
+                    // Sends the error
+                    char *msg = ServerCommand::gen(503,
+                            "Error: Authorization is required for own-domain "
+                            "senders",nullptr,0);
+                    Responses::write(soc, ssl, &msg[0], strlen(&msg[0]));
+                    delete(msg);
+                }
+
+                // Frees the left memory
+                free(username);
+                free(domain);
+            }
 
             // Sends continue
             Responses::preContextProceed(soc, ssl);
@@ -171,7 +203,7 @@ namespace Fannst::FSMTPServer::ESMTPModules
          * @return
          */
         bool handleRcptTo(const int *soc, SSL *ssl, const char *args, Models::Email &email,
-                Server::ConnPhasePT &phasePt, CassSession *cassSession)
+                Server::ConnPhasePT &phasePt, CassSession *cassSession, Models::UserQuickAccess *pUserQuickAccess)
         {
             // ----
             // Checks the sequence, if it is correct

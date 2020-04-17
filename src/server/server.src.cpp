@@ -261,6 +261,7 @@ namespace Fannst::FSMTPServer::Server
         int readLen = 0;            // The amount of chars, read in the thread at specific moment
 
         Models::Email result;       // The result email
+        Models::UserQuickAccess *userQuickAccess = nullptr;
 
         // ----
         // The connection status variables
@@ -399,7 +400,7 @@ namespace Fannst::FSMTPServer::Server
                 // ----
 
                 case ServerCommand::SMTPServerCommand::MAIL_FROM: {
-                    if (!ESMTPModules::Default::handleMailFrom(&sock_fd, ssl, currentCommandArgs, result, connPhasePt))
+                    if (!ESMTPModules::Default::handleMailFrom(&sock_fd, ssl, currentCommandArgs, result, connPhasePt, userQuickAccess))
                     {
                         err = true;
                         goto end;
@@ -529,7 +530,7 @@ namespace Fannst::FSMTPServer::Server
                 // ----
 
                 case ServerCommand::SMTPServerCommand::AUTH: {
-                    if (!ESMTPModules::Auth::handleAuth(&sock_fd, ssl, currentCommandArgs, connection.c_Session))
+                    if (!ESMTPModules::Auth::handleAuth(&sock_fd, ssl, currentCommandArgs, connection.c_Session, &userQuickAccess))
                     {
                         err = true;
                         goto end;
@@ -561,6 +562,8 @@ namespace Fannst::FSMTPServer::Server
                 SSL_free(ssl);
                 SSL_CTX_free(sslCtx);
             }
+
+            if (userQuickAccess != nullptr) free(userQuickAccess);
 
             // Closes the socket
             shutdown(sock_fd, SHUT_RDWR);
