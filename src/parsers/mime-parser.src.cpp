@@ -20,6 +20,8 @@ namespace Fannst::FSMTPServer::MIMEParser
     {
         char *tok = nullptr;
         char *rawC = nullptr;
+        bool headersEnded;
+
         std::size_t rawLen;
 
         // ----
@@ -34,10 +36,106 @@ namespace Fannst::FSMTPServer::MIMEParser
         memcpy(&rawC[0], &raw[0], rawLen);
 
         // ----
-        // Starts looping over the body
+        // Prepares the looping
         // ----
 
         // Gets the first occurrence of '\r'
         tok = strtok(&rawC[0], "\r");
+        // Sets headers ended to false
+        headersEnded = false;
+
+        // ----
+        // Starts the looping
+        // ----
+
+        while (tok != nullptr)
+        {
+            // Checks if there is an '\n' in the start which needs to be removed
+            if (tok[0] == '\n') memmove(&tok[0], &tok[1], strlen(&tok[0]));
+
+            // Checks if the current line is empty
+            std::cout << "'" << tok << "'" << std::endl;
+
+            // Goes to the next token
+            tok = strtok(nullptr, "\r");
+        }
+    }
+
+    /**
+    * Splits an email address up in the domain, and username
+    * @param raw
+    * @param username
+    * @param domain
+    * @return
+    */
+    int splitAddress(const char *raw, char **username, char **domain)
+    {
+        std::size_t rawCpyLen;
+        char *rawCpy = nullptr;
+        char *p = nullptr;
+        int i;
+
+        // ----
+        // Checks if the memory needs to be freed
+        // ----
+
+        if (*username != nullptr)
+        {
+            free(*username);
+            *username = nullptr;
+        }
+
+        if (*domain != nullptr)
+        {
+            free(*domain);
+            *domain = nullptr;
+        }
+
+        // ----
+        // Creates an copy of the raw address
+        // ----
+
+        // Gets the string length
+        rawCpyLen = ALLOC_CAS_STRING(strlen(&raw[0]), 0);
+        // Allocates the memory and stores the copy
+        rawCpy = reinterpret_cast<char *>(malloc(rawCpyLen));
+        memcpy(&rawCpy[0], &raw[0], rawCpyLen);
+
+        // ----
+        // Starts looping over the parts
+        // ----
+
+        // Finds the index of the '@' symbol
+        i = 0;
+        for (p = &rawCpy[0]; *p != '\0'; p++)
+        {
+            if (*p == '@') break;
+            i++;
+        }
+
+        // ----
+        // Frees the memory
+        // ----
+
+        free(rawCpy);
+
+        // Checks if the address is valid
+        if (rawCpyLen-1 == i) return -1;
+
+        // ----
+        // Splits the address
+        // ----
+
+        // Stores the username
+        *username = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(i, 0)));
+        (*username)[i] = '\0';
+        memcpy(&(*username)[0], &raw[0], i);
+
+        // Stores the domain
+        *domain = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(rawCpyLen-i-1, 0)));
+        (*domain)[rawCpyLen-i-1] = '\0';
+        memcpy(&(*domain)[0], &raw[i+1], rawCpyLen-i-1);
+
+        return 0;
     }
 }

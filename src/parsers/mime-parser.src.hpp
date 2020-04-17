@@ -31,5 +31,14 @@ namespace Fannst::FSMTPServer::MIMEParser
      * @param headers
      * @return
      */
-    BYTE parseHeaders(const char *raw, std::vector<Models::EmailHeader> &headers);
+    BYTE parseHeaders(const char *raw, std::vector<Fannst::FSMTPServer::Models::EmailHeader> &headers);
+
+    /**
+     * Splits an email address up in the domain, and username
+     * @param raw
+     * @param username
+     * @param domain
+     * @return
+     */
+    int splitAddress(const char *raw, char **username, char**domain);
 }

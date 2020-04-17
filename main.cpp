@@ -9,7 +9,7 @@
 
 int main(int argc, char **argv) {
 
-//    Fannst::FSMTPServer::Server::run(25, &argc, &argv);
+    Fannst::FSMTPServer::Server::run(25, &argc, &argv);
 
     // ----
     // Exits

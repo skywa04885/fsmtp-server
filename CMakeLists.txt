@@ -1,94 +1,102 @@
-cmake_minimum_required(VERSION 3.0)
-project(fsmtp_server)
+# Configures CMAKE
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
 
+# Sets the C++ Version
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(PkgConfig REQUIRED)
+# Configures the project
+PROJECT(fsmtp_server C CXX)
 
-add_library(
-        models STATIC
+# ----
+# Compiles the sub libraries
+# ----
 
-        src/email.src.hpp
-        src/email.src.cpp
-
-        src/user.src.hpp
-        src/user.src.cpp
-)
-
-add_library(
-        db STATIC
+ADD_LIBRARY(
+        lib_db
 
         src/db/cassandra.src.hpp
         src/db/cassandra.src.cpp
 )
 
-add_library(
-        logger STATIC
+ADD_LIBRARY(
+        server
 
-        src/logger.src.hpp
-        src/logger.src.cpp
-)
-
-add_library(
-        server STATIC
-
-        src/server/commands.src.hpp
-        src/server/commands.src.cpp
+        # Server itself
         src/server/server.src.hpp
         src/server/server.src.cpp
-        src/parsers/mail-parser.src.cpp
-        src/parsers/mail-parser.src.hpp
-        src/parsers/mime-parser.src.cpp
-        src/parsers/mime-parser.src.hpp
+
+        # The server commands
+        src/server/commands.src.cpp
+        src/server/commands.src.hpp
+
+        # The server response header
         src/server/responses.src.hpp
+
+        # The modules
+        src/server/modules/esmtp.src.hpp
+        src/server/modules/esmtp.src.cpp
+
+        src/server/modules/esmtp-auth.src.hpp
+        src/server/modules/esmtp-auth.src.cpp
+)
+
+ADD_LIBRARY(
+        models
+
+        # The email models
+        src/email.src.cpp
+        src/email.src.hpp
+
         src/queued-email.src.cpp
         src/queued-email.src.hpp
-        src/pre.hpp
+
+        # The user
+        src/user.src.cpp
+        src/user.src.hpp
 )
 
-add_library(
-        mailer STATIC
+ADD_LIBRARY(
+        logger
 
-        src/mailer/mailer.src.cpp
-        src/mailer/mailer.src.hpp
-        src/mailer/resolver.src.hpp
-        src/mailer/resolver.src.cpp
-        src/mailer/commands.src.hpp
-        src/mailer/commands.src.cpp
-        src/mailer/socket-handler.cpp
-        src/mailer/socket-handler.hpp
-
-        src/mailer/dkim/dkim.src.hpp
-        src/mailer/dkim/dkim.src.cpp
-        src/mailer/dkim/parsers.src.cpp
-        src/mailer/dkim/canonicalization/relaxed.src.cpp
-        src/mailer/dkim/canonicalization/simple.src.cpp
+        src/logger.src.cpp
+        src/logger.src.hpp
 )
 
-add_library(
-        ossl STATIC
+ADD_LIBRARY(
+        parsers
+
+        # The mime parser
+        src/parsers/mime-parser.src.hpp
+        src/parsers/mime-parser.src.cpp
+
+        # The old crap parser
+        src/parsers/mail-parser.src.cpp
+        src/parsers/mail-parser.src.hpp
+)
+
+ADD_LIBRARY(
+        ossl
 
         src/ossl/sha1.src.cpp
         src/ossl/sha256.src.cpp
-        src/ossl/rsa-sha256.src.cpp
         src/ossl/ossl.src.hpp
+        src/ossl/rsa-sha256.src.cpp
 )
 
-add_library(
-        esmtp_modules STATIC
+# The libraries array
+SET(libs server parsers models logger lib_db ossl)
 
-        src/server/modules/esmtp-auth.src.cpp
-        src/server/modules/esmtp-auth.src.hpp
-        src/server/modules/esmtp.src.cpp
-        src/server/modules/esmtp.src.hpp
+# ----
+# The executable, and linking
+# ----
+
+# Creates the main executable
+ADD_EXECUTABLE(
+        ${PROJECT_NAME}
+
+        main.cpp
 )
 
-add_library(
-        flib STATIC
-
-        src/flib/strings.hpp
-        src/flib/strings.cpp
-)
-
-add_executable(fsmtp_server main.cpp)
-target_link_libraries(fsmtp_server mailer server esmtp_modules db logger models flib ossl -lpthread -lfannst_libcompose -lfannst_libencoding -lcassandra -lresolv -lssl -lcrypto)
+# Links the libraries
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${libs} -lresolv -lssl -lcrypto -lpthread -lcassandra)

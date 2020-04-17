@@ -341,7 +341,11 @@ namespace Fannst::FSMTPServer::Server
 
 
                     // Parses the message
-                    Parsers::parseMime(dataBuffer, result);
+                    // Parsers::parseMime(dataBuffer, result);
+                    char *headers = nullptr;
+                    char *body = nullptr;
+                    Fannst::FSMTPServer::MIMEParser::separateHeadersAndBody(dataBuffer.c_str(), &headers, &body);
+//                    std::exit(-1);
 
                     // Sets normally empty values
                     result.m_Timestamp = 0;

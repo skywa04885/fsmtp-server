@@ -319,7 +319,7 @@ namespace Fannst::FSMTPServer::ESMTPModules
                 char *domain = nullptr;
 
                 // Splits the email
-                if (Parsers::splitAddress(&user[0], &username, &domain) < 0)
+                if (Fannst::FSMTPServer::MIMEParser::splitAddress(&user[0], &username, &domain) < 0)
                 {
                     // Sends the error
                     char *msg = ServerCommand::gen(530,

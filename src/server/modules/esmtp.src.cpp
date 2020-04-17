@@ -68,7 +68,7 @@ namespace Fannst::FSMTPServer::ESMTPModules
                 char *domain = nullptr;
 
                 // Parses the address
-                Parsers::splitAddress(&email.m_TransportFrom.e_Address[0], &username, &domain);
+                MIMEParser::splitAddress(&email.m_TransportFrom.e_Address[0], &username, &domain);
 
                 // Checks if it is an fannst sender
                 if (strcmp(&domain[0], GE_DOMAIN) == 0 && pUserQuickAccess == nullptr)
@@ -247,7 +247,7 @@ namespace Fannst::FSMTPServer::ESMTPModules
             char *domain = nullptr;
 
             // Checks if the parsing went good, if not return server error
-            if (Parsers::splitAddress(&email.m_TransportTo.e_Address.c_str()[0], &username, &domain) < 0)
+            if (MIMEParser::splitAddress(&email.m_TransportTo.e_Address.c_str()[0], &username, &domain) < 0)
             {
                 // Sends the response message
                 char *message = ServerCommand::gen(501, "Syntax Error: could not parse address",

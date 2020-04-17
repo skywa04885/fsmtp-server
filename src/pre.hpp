@@ -45,3 +45,9 @@
 // ----
 
 #define BYTE char
+
+// ----
+// Simple char definitions
+// ----
+
+#define CRLF "\r\n"
