@@ -1,2 +1,0 @@
-/usr/bin/ar qc libmodels.a  CMakeFiles/models.dir/src/email.src.cpp.o CMakeFiles/models.dir/src/user.src.cpp.o
-/usr/bin/ranlib libmodels.a

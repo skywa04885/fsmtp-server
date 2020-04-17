@@ -1,2 +1,0 @@
-/usr/bin/ar qc libdb.a  CMakeFiles/db.dir/src/db/cassandra.src.cpp.o
-/usr/bin/ranlib libdb.a
