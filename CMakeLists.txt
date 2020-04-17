@@ -38,6 +38,8 @@ add_library(
         src/server/server.src.cpp
         src/parsers/mail-parser.src.cpp
         src/parsers/mail-parser.src.hpp
+        src/parsers/mime-parser.src.cpp
+        src/parsers/mime-parser.src.hpp
         src/server/responses.src.hpp
         src/queued-email.src.cpp
         src/queued-email.src.hpp

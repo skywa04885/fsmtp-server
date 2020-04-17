@@ -71,7 +71,7 @@ namespace Fannst::FSMTPServer::ESMTPModules
                 Parsers::splitAddress(&email.m_TransportFrom.e_Address[0], &username, &domain);
 
                 // Checks if it is an fannst sender
-                if (strcmp(&domain[0], "fannst.nl") == 0 && pUserQuickAccess == nullptr)
+                if (strcmp(&domain[0], GE_DOMAIN) == 0 && pUserQuickAccess == nullptr)
                 {
                     // Sends the error
                     char *msg = ServerCommand::gen(503,
@@ -144,14 +144,14 @@ namespace Fannst::FSMTPServer::ESMTPModules
             if (ssl == nullptr)
             {
                 // Creates the arguments list
-                const char *argList[] = {"STARTTLS", "HELP", "AUTH DIGEST-MD5"};
+                const char *argList[] = {"STARTTLS", "HELP", "AUTH PLAIN"};
                 // Generates the message
                 message = ServerCommand::gen(250, &temp[0], argList,
                         sizeof(argList) / sizeof(const char *));
             } else
             {
                 // Creates the arguments list
-                const char *argList[] {"HELP", "AUTH DIGEST-MD5"};
+                const char *argList[] {"HELP", "AUTH PLAIN"};
                 // Generates the message
                 message = ServerCommand::gen(250, &temp[0], argList,
                         sizeof(argList) / sizeof(const char *));
@@ -205,6 +205,8 @@ namespace Fannst::FSMTPServer::ESMTPModules
         bool handleRcptTo(const int *soc, SSL *ssl, const char *args, Models::Email &email,
                 Server::ConnPhasePT &phasePt, CassSession *cassSession, Models::UserQuickAccess *pUserQuickAccess)
         {
+            bool rc = true;
+
             // ----
             // Checks the sequence, if it is correct
             // ----
@@ -213,8 +215,8 @@ namespace Fannst::FSMTPServer::ESMTPModules
             {
                 // Writes the error
                 Responses::preContextBadSequence(soc, ssl, "MAIL FROM");
-                // Returns false
-                return true;
+                // No memory allocated, so just return
+                return false;
             }
 
             // ----
@@ -224,6 +226,7 @@ namespace Fannst::FSMTPServer::ESMTPModules
             if (args == nullptr || strlen(args) == 0)
             {
                 Responses::syntaxError(soc, ssl);
+                // No memory allocated, so just return
                 return false;
             }
 
@@ -231,6 +234,7 @@ namespace Fannst::FSMTPServer::ESMTPModules
             if (Parsers::parseAddress(args, email.m_TransportTo) < 0)
             {
                 Responses::syntaxError(soc, ssl);
+                // No memory allocated, so just return
                 return false;
             }
 
@@ -239,102 +243,109 @@ namespace Fannst::FSMTPServer::ESMTPModules
             // ----
 
             // Splits the address
-            char *emailCstr = const_cast<char *>(email.m_TransportTo.e_Address.c_str());
             char *username = nullptr;
             char *domain = nullptr;
-            char *tok = strtok(emailCstr, "@");
-
-            // Checks if the string is too long, and if we need to stop
-            if (strlen(emailCstr) > 256)
-            {
-                // Sends the error message
-                char *message = ServerCommand::gen(471,
-                                                   "Address too large, would cause stack overflow",
-                                                   nullptr, 0);
-                Responses::write(soc, ssl, message, strlen(message));
-                free(message);
-
-                PREP_ERROR("Refused parsing", "Address longer then 256 chars, preventing high memory usage ..")
-                return false;
-            }
-
-            // Loop over the occurrences, char because of the small size
-            unsigned char i = 0;
-            while (tok != nullptr)
-            {
-                if (i == 0)
-                {
-                    // Allocates space on the stack
-                    username = reinterpret_cast<char *>(alloca(strlen(tok)));
-                    // Copies the string, including the  '\0'
-                    memcpy(username, tok, strlen(tok) + 1);
-                } else if (i == 1)
-                {
-                    // Allocates space on the stack
-                    domain = reinterpret_cast<char *>(alloca(strlen(tok)));
-                    // Copies the string, including the  '\0'
-                    memcpy(domain, tok, strlen(tok) + 1);
-                } else break;
-
-                // Finds the next token
-                tok = strtok(nullptr, "@");
-                i++; // Increments i
-            }
 
             // Checks if the parsing went good, if not return server error
-            if (username == nullptr || domain == nullptr)
+            if (Parsers::splitAddress(&email.m_TransportTo.e_Address.c_str()[0], &username, &domain) < 0)
             {
                 // Sends the response message
-                char *message = ServerCommand::gen(471, "could not parse address",
+                char *message = ServerCommand::gen(501, "Syntax Error: could not parse address",
                                                    nullptr, 0);
                 Responses::write(soc, ssl, message, strlen(message));
                 free(message);
 
-                // Returns that there was an error
-                return false;
+                // Sets the return code and goes to the end
+                rc = false;
+                goto handleRcptToEnd;
             }
 
             // ----
-            // Performs user check from Apache Cassandra
+            // Checks if the email is being forwarded
             // ----
 
-            // Finds the receiver on our server
-            Models::UserQuickAccess userQuickAccess;
-            int rc = Models::UserQuickAccess::selectByDomainAndUsername(cassSession, domain, username,
-                                                                        userQuickAccess);
+            if (strcmp(domain, GE_DOMAIN) != 0)
+            { // Message needs to be forwarded
 
-            // Checks if the user was found
-            if (rc == -1)
+                // ----
+                // Checks if relaying is allowed
+                // ----
+
+                if (!pUserQuickAccess)
+                {
+                    // Writes the error
+                    char *msg = ServerCommand::gen(503,
+                            "Error: Authorization is required for relaying",
+                            nullptr,0);
+                    Responses::write(soc, ssl, &msg[0], strlen(&msg[0]));
+                    delete(msg);
+
+                    // Sets the return code and goes to the end
+                    rc = false;
+                    goto handleRcptToEnd;
+                }
+
+                // ----
+                // Sets the relaying to true
+                // ----
+
+                // TODO: Fix relaying
+            } else
             {
-                // Sends the response message
-                char *message = ServerCommand::gen(471, "Could not perform cassandra query",
-                                                   nullptr, 0);
-                Responses::write(soc, ssl, message, strlen(message));
-                free(message);
+                // ----
+                // Performs user check from Apache Cassandra
+                // ----
 
-                // Returns false
-                return false;
-            } else if (rc == -2)
-            {
-                // Sends the response message
-                char *message = ServerCommand::gen(551, "User not local", nullptr, 0);
-                Responses::write(soc, ssl, message, strlen(message));
-                free(message);
+                // Finds the receiver on our server
+                Models::UserQuickAccess userQuickAccess;
+                int rc2 = Models::UserQuickAccess::selectByDomainAndUsername(cassSession, domain, username,
+                                                                             userQuickAccess);
 
-                // Returns false
-                return false;
+                // Checks if the user was found
+                if (rc2 == -1)
+                {
+                    // Sends the response message
+                    char *message = ServerCommand::gen(471, "Could not perform cassandra query",
+                                                       nullptr, 0);
+                    Responses::write(soc, ssl, message, strlen(message));
+                    free(message);
+
+                    // Returns false
+                    return false;
+                } else if (rc2 == -2)
+                {
+                    // Sends the response message
+                    char *message = ServerCommand::gen(551, "User not local", nullptr, 0);
+                    Responses::write(soc, ssl, message, strlen(message));
+                    free(message);
+
+                    // Returns false
+                    return false;
+                }
+
+                // Sets the user id to the email user id
+                email.m_UserUUID = userQuickAccess.u_Uuid;
+
+                // Sends continue
+                Responses::preContextProceed(soc, ssl);
             }
-
-            // Sets the user id to the email user id
-            email.m_UserUUID = userQuickAccess.u_Uuid;
-
-            // Sends continue
-            Responses::preContextProceed(soc, ssl);
 
             // Sets the phase
             phasePt = Server::ConnPhasePT::PHASE_PT_MAIL_TO;
 
-            return true;
+            // ----
+            // The end
+            // ----
+        handleRcptToEnd:
+
+            // ----
+            // Frees memory
+            // ----
+
+            free(username);
+            free(domain);
+
+            return rc;
         }
     }
 }

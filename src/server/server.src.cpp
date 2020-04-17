@@ -413,7 +413,7 @@ namespace Fannst::FSMTPServer::Server
                 // ----
 
                 case ServerCommand::SMTPServerCommand::RCPT_TO: {
-                    if (!ESMTPModules::Default::handleRcptTo(&sock_fd, ssl, currentCommandArgs, result, connPhasePt, connection.c_Session))
+                    if (!ESMTPModules::Default::handleRcptTo(&sock_fd, ssl, currentCommandArgs, result, connPhasePt, connection.c_Session, userQuickAccess))
                     {
                         err = true;
                         goto end;

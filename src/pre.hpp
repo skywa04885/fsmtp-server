@@ -10,6 +10,7 @@
 // ----
 // The server configuration
 // ----
+
 #define GE_DOMAIN "fannst.nl"
 #define GE_CASSANDRA_CONTACT_POINTS "192.168.132.133"
 

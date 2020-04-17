@@ -58,8 +58,6 @@ namespace Fannst::FSMTPServer::Models
         );
         UserQuickAccess();
 
-        ~UserQuickAccess();
-
         const char *u_Domain;
         const char *u_Username;
         CassUuid u_Uuid;

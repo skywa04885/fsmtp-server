@@ -97,8 +97,6 @@ sudo ./fsmtp_server
 
 ## Developers
 
-Only me LOL !
-
 |Name          |Github                                         |Website                                  |
 |--------------|-----------------------------------------------|-----------------------------------------|
 |Luke Rieff    |[skywa04885](https://github.com/skywa04885)    |[me.fannst.nl](https://me.fannst.nl)     |

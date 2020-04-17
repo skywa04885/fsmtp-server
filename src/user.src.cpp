@@ -34,10 +34,6 @@ namespace Fannst::FSMTPServer::Models
         u_Bucket(u_Bucket)
     {}
 
-    User::~User() {
-
-    }
-
     UserQuickAccess::UserQuickAccess(
         const char *u_Domain,
         const char *u_Username,
@@ -51,10 +47,6 @@ namespace Fannst::FSMTPServer::Models
         u_Bucket(u_Bucket),
         u_Password(u_Password)
     {}
-
-    UserQuickAccess::~UserQuickAccess() {
-
-    }
 
     int UserQuickAccess::selectByDomainAndUsername(CassSession *session, const char *domain, const char *username, UserQuickAccess& target) {
         // Creates the query
