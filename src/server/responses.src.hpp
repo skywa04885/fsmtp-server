@@ -56,7 +56,7 @@ namespace Fannst::FSMTPServer::Responses
      */
     inline void preContextProceed(const int *soc, SSL *ssl)
     {
-        char *message = ServerCommand::gen(250, "OK Proceed", nullptr, 0);
+        char *message = ServerCommand::gen(250, "Ok: proceed", nullptr, 0);
         write(soc, ssl, message, strlen(message));
         free(message);
     }

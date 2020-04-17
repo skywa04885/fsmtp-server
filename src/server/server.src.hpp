@@ -53,8 +53,6 @@ namespace Fannst::FSMTPServer::Server
 
     void connectionThread(struct sockaddr_in *sockaddrIn, int sock_fd);
 
-    void sendMessage(const int *socket, std::string& message, Logger::Console& print);
-
     /**
  * Loads the passphrase from file
  * @param buffer

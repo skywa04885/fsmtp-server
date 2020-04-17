@@ -40,6 +40,18 @@ namespace Fannst::FSMTPServer::ServerCommand
                 commandResult = ServerCommand::SMTPServerCommand::HELP;
                 commandLen = 4;
             }
+        } else if (buf[0] == 'A')
+        {
+            // Copies the memory
+            memcpy(&temp[0], &buf[0], 4);
+            temp[4] = '\0';
+
+            // Checks what it is
+            if (strcmp(&temp[0], "AUTH") == 0)
+            {
+                commandResult = SMTPServerCommand::AUTH;
+                commandLen = 4;
+            }
         } else if (buf[0] == 'D')
         {
             // Copies the memory
@@ -101,35 +113,49 @@ namespace Fannst::FSMTPServer::ServerCommand
                 commandLen = 8;
             }
         }
-        // Free's the memory
-        delete temp;
-        // Checks if there are arguments
-        if (buf[commandLen] == ':' || commandResult == SMTPServerCommand::HELLO) {
-            // Gets the total amount of bytes to copy
-            unsigned long total2copy = strlen(&buf[0]) - commandLen - 2;
+        // Free's the temp memory
+        free(temp);
 
-            // Reserves space for the memory
-            char *arguments = reinterpret_cast<char *>(malloc(total2copy));
+        // Checks if there need to be default argument type parsed
+        if (buf[commandLen] == ':' || commandResult == SMTPServerCommand::AUTH
+        || commandResult == SMTPServerCommand::HELLO) {
+            // ----
+            // Checks if there is any content at all
+            // ----
 
+            if (strlen(&buf[commandLen]) == 2) return std::make_tuple(commandResult, nullptr);
+
+            // ----
             // Copies the memory
-            memcpy(&arguments[0], &buf[commandLen], total2copy);
-            arguments[total2copy] = '\0';
-
-            // ----
-            // Prepares the arguments for usage
             // ----
 
-            // Removes the ':'
-            if (arguments[0] == ':') memmove(&arguments[0], &arguments[1], strlen(&arguments[0]));
+            // Gets the size to copy
+            std::size_t size2copy = ALLOC_CAS_STRING(strlen(&buf[0]) - commandLen - 1, 0);
+            // Allocate the memory
+            char *args = reinterpret_cast<char *>(malloc(size2copy));
+            args[0] = '\0';
+            // Copies the required memory
+            strcat(&args[0], &buf[commandLen+1]);
+            // Removes the <CR><LF>
+            args[size2copy - 3] = '\0';
 
-            // Checks if there is whitespace which needs to be removed
-            if (arguments[0] == ' ') memmove(&arguments[0], &arguments[1], strlen(&arguments[0]));
+            // Resize the buffer
+            size2copy -= 3;
+            args = reinterpret_cast<char *>(realloc(&args[0], size2copy));
 
-            return std::make_tuple(commandResult, reinterpret_cast<const char *>(arguments));
-        } else
-        { // No arguments
-            return std::make_tuple(commandResult, nullptr);
-        }
+            // ----
+            // If whitespace at begin, remove it
+            // ----
+
+            if (args[0] == ' ') memmove(&args[0], &args[1], strlen(&args[0]));
+
+            // ----
+            // Returns the result
+            // ----
+            // std::cout << "'" << args << "'" << std::endl;
+
+            return std::make_tuple(commandResult, reinterpret_cast<const char *>(args));
+        } else return std::make_tuple(commandResult, nullptr);
     }
 
     /**

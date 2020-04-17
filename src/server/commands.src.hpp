@@ -28,7 +28,8 @@ namespace Fannst::FSMTPServer::ServerCommand
         DATA,
         START_TLS,
         QUIT,
-        HELP
+        HELP,
+        AUTH
     } SMTPServerCommand;
 
     /**

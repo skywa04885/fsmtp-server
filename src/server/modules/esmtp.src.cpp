@@ -80,7 +80,7 @@ namespace Fannst::FSMTPServer::ESMTPModules
             // Checks if args are there
             // ----
 
-            if (args == nullptr || strlen(args) == 0)
+            if (args == nullptr || args[0] == '\0')
             {
                 // Sends the response
                 char *message = ServerCommand::gen(501, "Empty EHLO/HELO command not allowed, closing connection.", nullptr, 0);
@@ -105,8 +105,21 @@ namespace Fannst::FSMTPServer::ESMTPModules
             // Sends the message
             // ----
 
-            const char *argList[] {"STARTTLS", "HELP"};
-            char *message = ServerCommand::gen(250, &temp[0], argList, 2);
+            char *message;
+
+            if (ssl == nullptr)
+            {
+                // Creates the arguments list
+                const char *argList[] = {"STARTTLS", "HELP", "AUTH DIGEST-MD5"};
+                // Generates the message
+                message = ServerCommand::gen(250, &temp[0], argList, sizeof(argList) / sizeof(const char *));
+            } else
+            {
+                // Creates the arguments list
+                const char *argList[] {"HELP", "AUTH DIGEST-MD5 PLAIN LOGIN"};
+                // Generates the message
+                message = ServerCommand::gen(250, &temp[0], argList, sizeof(argList) / sizeof(const char *));
+            }
             Responses::write(soc, ssl, message, strlen(message));
             free(message);
 

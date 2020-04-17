@@ -380,6 +380,10 @@ namespace Fannst::FSMTPServer::Server
 
             switch (currentCommand)
             {
+                // ----
+                // HELLO
+                // ----
+
                 case ServerCommand::SMTPServerCommand::HELLO: {
                     if (!ESMTPModules::Default::handleHello(&sock_fd, ssl, currentCommandArgs, connPhasePt, sockaddrIn))
                     {
@@ -388,6 +392,10 @@ namespace Fannst::FSMTPServer::Server
                     }
                     break;
                 }
+
+                // ----
+                // MAIL FROM
+                // ----
 
                 case ServerCommand::SMTPServerCommand::MAIL_FROM: {
                     if (!ESMTPModules::Default::handleMailFrom(&sock_fd, ssl, currentCommandArgs, result, connPhasePt))
@@ -398,6 +406,10 @@ namespace Fannst::FSMTPServer::Server
                     break;
                 }
 
+                // ----
+                // RCPT TO
+                // ----
+
                 case ServerCommand::SMTPServerCommand::RCPT_TO: {
                     if (!ESMTPModules::Default::handleRcptTo(&sock_fd, ssl, currentCommandArgs, result, connPhasePt, connection.c_Session))
                     {
@@ -407,9 +419,13 @@ namespace Fannst::FSMTPServer::Server
                     break;
                 }
 
+                // ----
+                // START TLS
+                // ----
+
                 case ServerCommand::SMTPServerCommand::START_TLS: {
                     // Writes the message
-                    const char *message = ServerCommand::gen(220, "Go ahead", nullptr, 0);
+                    const char *message = ServerCommand::gen(220, "Ok: continue", nullptr, 0);
                     Responses::write(&sock_fd, ssl, message, strlen(message));
                     delete message;
 
@@ -466,13 +482,16 @@ namespace Fannst::FSMTPServer::Server
                     break;
                 }
 
-                // The data section
+                // ----
+                // DATA START
+                // ----
+
                 case ServerCommand::SMTPServerCommand::DATA: {
                     // Checks if the command is allowed
                     if (connPhasePt >= ConnPhasePT::PHASE_PT_MAIL_TO)
                     {
                         // Sends the response
-                        const char *message = ServerCommand::gen(354, "", nullptr, 0);
+                        const char *message = ServerCommand::gen(354, "End data with <CR><LF>.<CR><LF>", nullptr, 0);
                         Responses::write(&sock_fd, ssl, message, strlen(message));
                         connPhasePt = ConnPhasePT::PHASE_PT_DATA;
                         delete message;
@@ -488,20 +507,28 @@ namespace Fannst::FSMTPServer::Server
                     break;
                 }
 
-                // Handles 'HELP'
+                // ----
+                // QUIT
+                // ----
+
                 case ServerCommand::SMTPServerCommand::QUIT: {
                     ESMTPModules::Default::handleQuit(&sock_fd, ssl);
                     goto end;
-                    break;
                 }
 
-                // Handles 'HELP'
+                // ----
+                // HELP
+                // ----
+
                 case ServerCommand::SMTPServerCommand::HELP: {
                     ESMTPModules::Default::handleHelp(&sock_fd, ssl);
                     break;
                 }
 
-                // Command not found
+                // ----
+                // Syntax Error, because of invalid command
+                // ----
+
                 default: {
                     Responses::syntaxError(&sock_fd, ssl);
                     err = true;
