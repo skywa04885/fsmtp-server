@@ -26,9 +26,14 @@
 #endif
 
 // ----
-// Allocation helpers
+// Assertions
 // ----
 
+#define ASSERT_NOT_ZERO(a)
+
+// ----
+// Allocation helpers
+// ----
 
 // Adds one byte to otherwise invalid memory for string
 #define ALLOC_CAS_STRING(a, b) a + b + 1

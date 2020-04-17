@@ -9,11 +9,62 @@
 
 #include "server.src.hpp"
 #include "./responses.src.hpp"
+#include "modules/esmtp.src.hpp"
 
 namespace Fannst::FSMTPServer::Server
 {
     std::atomic<int> _usedThreads(0);
     int _maxThreads = MAX_THREADS;
+
+    /**
+         * Loads the passphrase from file
+         * @param buffer
+         * @param size
+         * @param rwflag
+         * @param u
+         * @return
+         */
+    int sslConfigureContextLoadPassword(char *buffer, int size, int rwflag, void *u)
+    {
+        // Opens the file, with reading mode
+        FILE *file = fopen("../keys/ssl/pp.pem", "r");
+        if (file == nullptr)
+        {
+            // TODO: Handle file error
+        }
+
+        // Reads the password
+        fgets(&buffer[0], size, file);
+        // Returns the length
+        return strlen(&buffer[0]);
+    }
+
+    /**
+     * Configures an OpenSSL context for OpenSSL Sockets
+     * @param ctx
+     * @return
+     */
+    int sslConfigureContext(SSL_CTX *ctx)
+    {
+        SSL_CTX_set_ecdh_auto(ctx, 1);
+        SSL_CTX_set_default_passwd_cb(ctx, &sslConfigureContextLoadPassword);
+
+        // Sets the certificate
+        if (SSL_CTX_use_certificate_file(ctx, "../keys/ssl/cert.pem", SSL_FILETYPE_PEM) <= 0)
+        {
+            ERR_print_errors_fp(stderr);
+            return -1;
+        }
+
+        // Sets the private key
+        if (SSL_CTX_use_PrivateKey_file(ctx, "../keys/ssl/key.pem", SSL_FILETYPE_PEM) <= 0)
+        {
+            ERR_print_errors_fp(stderr);
+            return -1;
+        }
+
+        return 0;
+    }
 
     /**
      * Runs an server instance
@@ -131,56 +182,6 @@ namespace Fannst::FSMTPServer::Server
     }
 
     /**
-     * Reads passphrase file for OpenSSL Sockets
-     * @param buffer
-     * @param size
-     * @param rwflag
-     * @param u
-     * @return
-     */
-    int sslConfigureContexLoadPassword(char *buffer, int size, int rwflag, void *u)
-    {
-        // Opens the file, with reading mode
-        FILE *file = fopen("../keys/ssl/pp.pem", "r");
-        if (file == nullptr)
-        {
-            // TODO: Handle file error
-        }
-
-        // Reads the password
-        fgets(&buffer[0], size, file);
-        // Returns the length
-        return strlen(&buffer[0]);
-    }
-
-    /**
-     * Configures an OpenSSL context for OpenSSL Sockets
-     * @param ctx
-     * @return
-     */
-    int sslConfigureContext(SSL_CTX *ctx)
-    {
-        SSL_CTX_set_ecdh_auto(ctx, 1);
-        SSL_CTX_set_default_passwd_cb(ctx, &sslConfigureContexLoadPassword);
-
-        // Sets the certificate
-        if (SSL_CTX_use_certificate_file(ctx, "../keys/ssl/cert.pem", SSL_FILETYPE_PEM) <= 0)
-        {
-            ERR_print_errors_fp(stderr);
-            return -1;
-        }
-
-        // Sets the private key
-        if (SSL_CTX_use_PrivateKey_file(ctx, "../keys/ssl/key.pem", SSL_FILETYPE_PEM) <= 0)
-        {
-            ERR_print_errors_fp(stderr);
-            return -1;
-        }
-
-        return 0;
-    }
-
-    /**
      * Method used for single thread
      * @param params
      */
@@ -265,7 +266,6 @@ namespace Fannst::FSMTPServer::Server
         // ----
 
         bool err = false;           // If the current thread has errored out
-        bool usingSSL = false;      // If the connection is making use of START TLS
 
         // ----
         // The OpenSSL Connection variables
@@ -293,9 +293,8 @@ namespace Fannst::FSMTPServer::Server
             // Reads the data
             // ----
 
-            if (!usingSSL) readLen = recv(sock_fd, &buffer[0], 1024, 0);
+            if (ssl == nullptr) readLen = recv(sock_fd, &buffer[0], 1024, 0);
             else readLen = SSL_read(ssl, &buffer[0], 1024);
-
 
             // ----
             // Checks if there went something wrong
@@ -330,15 +329,14 @@ namespace Fannst::FSMTPServer::Server
                 }
                 if (id != std::string::npos)
                 {
-                    Fannst::Composer::prettyPrintBody(dataBuffer);
-
                     // Sets the status
                     connPhasePt = ConnPhasePT::PHASE_PT_DATA_END;
 
-                    // Sends the response
-                    const char *message = ServerCommand::gen(250, "OK: Message received by Fannst", nullptr, 0);
+                    // Sends the message
+                    const char *message = ServerCommand::gen(250, "Ok: queued as 0", nullptr, 0);
                     Responses::write(&sock_fd, ssl, message, strlen(message));
                     delete message;
+
 
                     // Parses the message
                     Parsers::parseMime(dataBuffer, result);
@@ -361,11 +359,12 @@ namespace Fannst::FSMTPServer::Server
                     cass_uuid_gen_free(uuidGen);
 
                     // Sets the receive params
-                    result.m_FullHeaders.push_back(Models::EmailHeader{"X-FN-TransportType", usingSSL ? "START TLS" : "Plain Text"});
+                    result.m_FullHeaders.push_back(Models::EmailHeader{"X-FN-TransportType", ssl == nullptr ? "START TLS" : "Plain Text"});
                     result.m_FullHeaders.push_back(Models::EmailHeader{"X-FN-ServerVersion", "FSMTP 1.0"});
 
                     // Saves the email
                     result.save(connection.c_Session);
+
                     continue;
                 }
 
@@ -381,48 +380,34 @@ namespace Fannst::FSMTPServer::Server
 
             switch (currentCommand)
             {
-                // Client introduces
                 case ServerCommand::SMTPServerCommand::HELLO: {
-                    if (!Responses::handleHelo(&sock_fd, ssl, currentCommandArgs,
-                            connPhasePt, sockaddrIn)) {
+                    if (!ESMTPModules::Default::handleHello(&sock_fd, ssl, currentCommandArgs, connPhasePt, sockaddrIn))
+                    {
                         err = true;
                         goto end;
                     }
-
                     break;
                 }
 
-                // Client requests exit
-                case ServerCommand::SMTPServerCommand::QUIT: {
-                    Responses::handleQuit(&sock_fd, ssl);
-                    goto end;
-                }
-
-                // Handles 'MAIL_FROM'
                 case ServerCommand::SMTPServerCommand::MAIL_FROM: {
-                    if (!Responses::handleMailFrom(&sock_fd, ssl, currentCommandArgs,
-                            result, connPhasePt)) {
+                    if (!ESMTPModules::Default::handleMailFrom(&sock_fd, ssl, currentCommandArgs, result, connPhasePt))
+                    {
                         err = true;
                         goto end;
                     }
-
                     break;
                 }
 
-                // Handles 'RCPT TO'
                 case ServerCommand::SMTPServerCommand::RCPT_TO: {
-                    if (!Responses::handleRcptTo(&sock_fd, ssl, currentCommandArgs, result,
-                            connPhasePt, connection.c_Session)) {
+                    if (!ESMTPModules::Default::handleRcptTo(&sock_fd, ssl, currentCommandArgs, result, connPhasePt, connection.c_Session))
+                    {
                         err = true;
                         goto end;
-                    };
+                    }
                     break;
                 }
 
-                // Handles 'START TLS'
                 case ServerCommand::SMTPServerCommand::START_TLS: {
-                    DEBUG_ONLY(print << "Client requested TLS connection" << Logger::ConsoleOptions::ENDL)
-
                     // Writes the message
                     const char *message = ServerCommand::gen(220, "Go ahead", nullptr, 0);
                     Responses::write(&sock_fd, ssl, message, strlen(message));
@@ -432,6 +417,8 @@ namespace Fannst::FSMTPServer::Server
                     // Initializes OpenSSL
                     // ----
 
+                    DEBUG_ONLY(print << "Initializing TLS connection ..." << Logger::ConsoleOptions::ENDL)
+
                     // Creates the context
                     const SSL_METHOD *method = SSLv23_server_method();
                     sslCtx = SSL_CTX_new(method);
@@ -439,13 +426,19 @@ namespace Fannst::FSMTPServer::Server
                     {
                         PREP_ERROR("SSL Error", "Could not create context ..")
                         ERR_print_errors_fp(stderr);
-                        // TODO: Send error
+
+                        err = true;
+                        goto end;
                     }
 
                     // Assigns the keys and certificate
                     if (sslConfigureContext(sslCtx) < 0)
                     {
-                        // TODO: Send error
+                        PREP_ERROR("SSL Error", "Could not configure context ..")
+                        ERR_print_errors_fp(stderr);
+
+                        err = true;
+                        goto end;
                     }
 
                     // ----
@@ -466,14 +459,10 @@ namespace Fannst::FSMTPServer::Server
                     }
 
                     // Resets the state
-                    connPhasePt = ConnPhasePT::PHASE_PT_INITIAL;
+                    connPhasePt = Server::ConnPhasePT::PHASE_PT_INITIAL;
 
-                    // Sets using ssl to true
-                    usingSSL = true;
+                    DEBUG_ONLY(print << "Initialized TLS connection ..." << Logger::ConsoleOptions::ENDL)
 
-                    DEBUG_ONLY(print << "TLS connection initialized" << Logger::ConsoleOptions::ENDL)
-
-                    // Breaks
                     break;
                 }
 
@@ -500,8 +489,15 @@ namespace Fannst::FSMTPServer::Server
                 }
 
                 // Handles 'HELP'
+                case ServerCommand::SMTPServerCommand::QUIT: {
+                    ESMTPModules::Default::handleQuit(&sock_fd, ssl);
+                    goto end;
+                    break;
+                }
+
+                // Handles 'HELP'
                 case ServerCommand::SMTPServerCommand::HELP: {
-                    Responses::handleHelp(&sock_fd, ssl);
+                    ESMTPModules::Default::handleHelp(&sock_fd, ssl);
                     break;
                 }
 

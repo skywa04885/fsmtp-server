@@ -28,7 +28,6 @@
 #include "../parsers/mail-parser.src.hpp"
 #include "../user.src.hpp"
 #include "../pre.hpp"
-#include "../flib/strings.hpp"
 
 #define MAX_THREADS 6
 
@@ -40,7 +39,7 @@ namespace Fannst::FSMTPServer::Server
     } ConnectionThreadParams;
 
     typedef enum {
-        PHASE_PT_INITIAL = 0,
+        PHASE_PT_INITIAL,
         PHASE_PT_HELLO,
         PHASE_PT_MAIL_FROM,
         PHASE_PT_MAIL_TO,
@@ -49,20 +48,27 @@ namespace Fannst::FSMTPServer::Server
         PHASE_PT_QUIT
     } ConnPhasePT;
 
-    typedef enum {
-        PHASE_EC_INITIAL = 0,
-        PHASE_EC_HELLO,
-        PHASE_eC_START_TLS,
-        PHASE_EC_MAIL_FROM,
-        PHASE_EC_MAIL_TO,
-        PHASE_EC_DATA,
-        PHASE_EC_DATA_END,
-        PHASE_EC_QUIT
-    } ConnPhaseEC;
 
     int run(const unsigned int& port, int *argc, char ***argv);
 
     void connectionThread(struct sockaddr_in *sockaddrIn, int sock_fd);
 
     void sendMessage(const int *socket, std::string& message, Logger::Console& print);
+
+    /**
+ * Loads the passphrase from file
+ * @param buffer
+ * @param size
+ * @param rwflag
+ * @param u
+ * @return
+ */
+    int sslConfigureContextLoadPassword(char *buffer, int size, int rwflag, void *u);
+
+    /**
+     * Configures an OpenSSL context for OpenSSL Sockets
+     * @param ctx
+     * @return
+     */
+    int sslConfigureContext(SSL_CTX *ctx);
 };

@@ -67,6 +67,15 @@ add_library(
 )
 
 add_library(
+        esmtp_modules STATIC
+
+        src/server/modules/esmtp-auth.src.cpp
+        src/server/modules/esmtp-auth.src.hpp
+        src/server/modules/esmtp.src.cpp
+        src/server/modules/esmtp.src.hpp
+)
+
+add_library(
         flib STATIC
 
         src/flib/strings.hpp
@@ -74,4 +83,4 @@ add_library(
 )
 
 add_executable(fsmtp_server main.cpp)
-target_link_libraries(fsmtp_server mailer server db logger models flib -lpthread -lfannst_libcompose -lfannst_libencoding -lcassandra -lresolv -lssl -lcrypto)
+target_link_libraries(fsmtp_server mailer server esmtp_modules db logger models flib -lpthread -lfannst_libcompose -lfannst_libencoding -lcassandra -lresolv -lssl -lcrypto)
