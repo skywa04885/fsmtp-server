@@ -7,17 +7,17 @@
 
 #pragma once
 
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <fcntl.h>
 #include <string>
 #include <tuple>
 #include <thread>
 #include <fstream>
-#include <memory.h>
 #include <atomic>
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <memory.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
@@ -28,6 +28,7 @@
 #include "../parsers/mail-parser.src.hpp"
 #include "../user.src.hpp"
 #include "../pre.hpp"
+#include "../ossl/ossl.src.hpp"
 
 #define MAX_THREADS 6
 
@@ -54,13 +55,13 @@ namespace Fannst::FSMTPServer::Server
     void connectionThread(struct sockaddr_in *sockaddrIn, int sock_fd);
 
     /**
- * Loads the passphrase from file
- * @param buffer
- * @param size
- * @param rwflag
- * @param u
- * @return
- */
+     * Loads the passphrase from file
+     * @param buffer
+     * @param size
+     * @param rwflag
+     * @param u
+     * @return
+     */
     int sslConfigureContextLoadPassword(char *buffer, int size, int rwflag, void *u);
 
     /**

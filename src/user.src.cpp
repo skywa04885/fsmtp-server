@@ -11,13 +11,13 @@
 namespace Fannst::FSMTPServer::Models
 {
     User::User(
-        const std::string &u_FullName,
-        const std::string &u_Password,
-        const std::string &u_Domain,
-        const std::string &u_Username,
+        const char *u_FullName,
+        const char *u_Password,
+        const char *u_Domain,
+        const char *u_Username,
         const CassUuid &u_uuid,
-        const std::string &u_Description,
-        const std::string &u_Picture,
+        const char *u_Description,
+        const char *u_Picture,
         const cass_int64_t &u_BirthDate,
         const cass_int64_t &u_CreationDate,
         const cass_int64_t &u_Bucket
@@ -39,11 +39,11 @@ namespace Fannst::FSMTPServer::Models
     }
 
     UserQuickAccess::UserQuickAccess(
-        const std::string &u_Domain,
-        const std::string &u_Username,
+        const char *u_Domain,
+        const char *u_Username,
         const CassUuid &u_Uuid,
         const cass_int64_t &u_Bucket,
-        const std::string &u_Password
+        const char *u_Password
     ):
         u_Domain(u_Domain),
         u_Username(u_Username),

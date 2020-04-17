@@ -19,6 +19,7 @@
 
 #include "../../logger.src.hpp"
 #include "../../pre.hpp"
+#include "../../ossl/ossl.src.hpp"
 
 #define FANNST_DKIM_TOTAL_PARTS 11
 #define FANNST_DKIM_MAX_SIG_LL 66
@@ -97,24 +98,6 @@ namespace Fannst::FSMTPServer::DKIM
     void canonicalizeBodyRelaxed(const char *raw, char **ret);
 
     void cleanWhitespace(const char *a, std::size_t aLen, char **ret);
-
-    namespace OpenSSL
-    {
-        /**
-         * Performs SHA256 hash, and returns the base 64 version
-         * @param raw
-         * @param hRet
-         */
-        void sha256base64(const char *raw, char **hRet);
-
-        /**
-         * Performs RSA-SHA256 Signature, and returns the base 64 version
-         * @param raw
-         * @param hRet
-         */
-        int rsaSha256genSig(const char *raw,
-                const char *pKeyFile, char **hRet);
-    }
 
     /**
      * Gets the index of an char

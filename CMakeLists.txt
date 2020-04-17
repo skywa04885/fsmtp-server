@@ -61,9 +61,15 @@ add_library(
         src/mailer/dkim/parsers.src.cpp
         src/mailer/dkim/canonicalization/relaxed.src.cpp
         src/mailer/dkim/canonicalization/simple.src.cpp
-        src/mailer/dkim/openssl/sha1.src.cpp
-        src/mailer/dkim/openssl/sha256.src.cpp
-        src/mailer/dkim/openssl/rsa-sha256.src.cpp
+)
+
+add_library(
+        ossl STATIC
+
+        src/ossl/sha1.src.cpp
+        src/ossl/sha256.src.cpp
+        src/ossl/rsa-sha256.src.cpp
+        src/ossl/ossl.src.hpp
 )
 
 add_library(
@@ -83,4 +89,4 @@ add_library(
 )
 
 add_executable(fsmtp_server main.cpp)
-target_link_libraries(fsmtp_server mailer server esmtp_modules db logger models flib -lpthread -lfannst_libcompose -lfannst_libencoding -lcassandra -lresolv -lssl -lcrypto)
+target_link_libraries(fsmtp_server mailer server esmtp_modules db logger models flib ossl -lpthread -lfannst_libcompose -lfannst_libencoding -lcassandra -lresolv -lssl -lcrypto)

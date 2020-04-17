@@ -10,6 +10,7 @@
 #include "server.src.hpp"
 #include "./responses.src.hpp"
 #include "modules/esmtp.src.hpp"
+#include "modules/esmtp-auth.src.hpp"
 
 namespace Fannst::FSMTPServer::Server
 {
@@ -200,7 +201,7 @@ namespace Fannst::FSMTPServer::Server
         printPrefix.append(") Client@Server");
 
         // Prints the result
-        Logger::Console print(Logger::Level::LOGGER_INFO, printPrefix.c_str());
+        Logger::Console print(Logger::Level::LOGGER_DEBUG, printPrefix.c_str());
         print << "Thread assigned successfully." << Logger::ConsoleOptions::ENDL;
         #endif
 
@@ -491,12 +492,10 @@ namespace Fannst::FSMTPServer::Server
                     if (connPhasePt >= ConnPhasePT::PHASE_PT_MAIL_TO)
                     {
                         // Sends the response
-                        const char *message = ServerCommand::gen(354, "End data with <CR><LF>.<CR><LF>", nullptr, 0);
+                        char *message = ServerCommand::gen(354, "End data with <CR><LF>.<CR><LF>", nullptr, 0);
                         Responses::write(&sock_fd, ssl, message, strlen(message));
                         connPhasePt = ConnPhasePT::PHASE_PT_DATA;
-                        delete message;
-
-                        // Breaks
+                        free(message);
                         break;
                     }
 
@@ -522,6 +521,19 @@ namespace Fannst::FSMTPServer::Server
 
                 case ServerCommand::SMTPServerCommand::HELP: {
                     ESMTPModules::Default::handleHelp(&sock_fd, ssl);
+                    break;
+                }
+
+                // ----
+                // AUTH
+                // ----
+
+                case ServerCommand::SMTPServerCommand::AUTH: {
+                    if (!ESMTPModules::Auth::handleAuth(&sock_fd, ssl, currentCommandArgs, connection.c_Session))
+                    {
+                        err = true;
+                        goto end;
+                    }
                     break;
                 }
 

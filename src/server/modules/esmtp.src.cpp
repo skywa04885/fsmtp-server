@@ -83,7 +83,9 @@ namespace Fannst::FSMTPServer::ESMTPModules
             if (args == nullptr || args[0] == '\0')
             {
                 // Sends the response
-                char *message = ServerCommand::gen(501, "Empty EHLO/HELO command not allowed, closing connection.", nullptr, 0);
+                char *message = ServerCommand::gen(501,
+                        "Empty EHLO/HELO command not allowed, closing connection", nullptr,
+                        0);
                 Responses::write(soc, ssl, message, strlen(message));
                 free(message);
 
@@ -112,13 +114,15 @@ namespace Fannst::FSMTPServer::ESMTPModules
                 // Creates the arguments list
                 const char *argList[] = {"STARTTLS", "HELP", "AUTH DIGEST-MD5"};
                 // Generates the message
-                message = ServerCommand::gen(250, &temp[0], argList, sizeof(argList) / sizeof(const char *));
+                message = ServerCommand::gen(250, &temp[0], argList,
+                        sizeof(argList) / sizeof(const char *));
             } else
             {
                 // Creates the arguments list
-                const char *argList[] {"HELP", "AUTH DIGEST-MD5 PLAIN LOGIN"};
+                const char *argList[] {"HELP", "AUTH DIGEST-MD5"};
                 // Generates the message
-                message = ServerCommand::gen(250, &temp[0], argList, sizeof(argList) / sizeof(const char *));
+                message = ServerCommand::gen(250, &temp[0], argList,
+                        sizeof(argList) / sizeof(const char *));
             }
             Responses::write(soc, ssl, message, strlen(message));
             free(message);
@@ -149,7 +153,9 @@ namespace Fannst::FSMTPServer::ESMTPModules
          */
         void handleHelp(const int *soc, SSL *ssl)
         {
-            char *message = ServerCommand::gen(214, "Please visit https://software.fannst.nl for basic help, the Github repository is https://github.com/skywa04885/fsmtp-server", nullptr, 0);
+            char *message = ServerCommand::gen(214,
+                    "Please visit https://software.fannst.nl for basic help, the Github repository "
+                    "is https://github.com/skywa04885/fsmtp-server, Author: Luke A.C.A. Rieff", nullptr, 0);
             Responses::write(soc, ssl, message, strlen(message));
             free(message);
         }
@@ -211,7 +217,8 @@ namespace Fannst::FSMTPServer::ESMTPModules
             {
                 // Sends the error message
                 char *message = ServerCommand::gen(471,
-                                                   "Address too large, would cause stack overflow ..", nullptr, 0);
+                                                   "Address too large, would cause stack overflow",
+                                                   nullptr, 0);
                 Responses::write(soc, ssl, message, strlen(message));
                 free(message);
 
@@ -246,7 +253,7 @@ namespace Fannst::FSMTPServer::ESMTPModules
             if (username == nullptr || domain == nullptr)
             {
                 // Sends the response message
-                char *message = ServerCommand::gen(471, "could not parse address ..",
+                char *message = ServerCommand::gen(471, "could not parse address",
                                                    nullptr, 0);
                 Responses::write(soc, ssl, message, strlen(message));
                 free(message);
@@ -268,7 +275,7 @@ namespace Fannst::FSMTPServer::ESMTPModules
             if (rc == -1)
             {
                 // Sends the response message
-                char *message = ServerCommand::gen(471, "Could not perform cassandra query ..",
+                char *message = ServerCommand::gen(471, "Could not perform cassandra query",
                                                    nullptr, 0);
                 Responses::write(soc, ssl, message, strlen(message));
                 free(message);

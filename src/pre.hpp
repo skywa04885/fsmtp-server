@@ -1,3 +1,10 @@
+/*
+ * Project: <SMTP> FSMTP Server by Luke Rieff
+ * Author: Luke Rieff
+ * Github: https://github.com/skywa04885/fsmtp-server
+ * Copyright: Free to use, without modifying
+ */
+
 #pragma once
 
 // ----
@@ -26,14 +33,14 @@
 #endif
 
 // ----
-// Assertions
-// ----
-
-#define ASSERT_NOT_ZERO(a)
-
-// ----
 // Allocation helpers
 // ----
 
 // Adds one byte to otherwise invalid memory for string
 #define ALLOC_CAS_STRING(a, b) a + b + 1
+
+// ----
+// Simple type defintions
+// ----
+
+#define BYTE char

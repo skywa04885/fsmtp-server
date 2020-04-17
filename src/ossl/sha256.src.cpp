@@ -5,9 +5,9 @@
  * Copyright: Free to use, without modifying
  */
 
-#include "../dkim.src.hpp"
+#include "ossl.src.hpp"
 
-namespace Fannst::FSMTPServer::DKIM::OpenSSL {
+namespace Fannst::FSMTPServer::OpenSSL {
     /**
      * Performs SHA256 hash, and returns the base 64 version
      * @param raw

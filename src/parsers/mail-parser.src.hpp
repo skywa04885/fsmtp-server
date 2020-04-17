@@ -100,4 +100,13 @@ namespace Fannst::FSMTPServer::Parsers
      */
 
     int parseHeader(std::string &raw, std::vector<Models::EmailHeader>& headers);
+
+    /**
+     * Splits an email address up in the domain, and username
+     * @param raw
+     * @param username
+     * @param domain
+     * @return
+     */
+    int splitAddress(const char *raw, char **username, char**domain);
 };

@@ -5,6 +5,8 @@
  * Copyright: Free to use, without modifying
  */
 
+#pragma once
+
 #include <openssl/ssl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>

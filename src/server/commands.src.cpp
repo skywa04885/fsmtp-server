@@ -209,9 +209,9 @@ namespace Fannst::FSMTPServer::ServerCommand
         // ----
 
         // Creates the buffer with 3 chars available for the code, and one for the dash or space
-        result = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(4, 0)));
+        result = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(12, 0)));
         result[0] = '\0';
-        resultSize = 5;
+        resultSize = 13;
 
         // ----
         // Appends the code
@@ -276,7 +276,7 @@ namespace Fannst::FSMTPServer::ServerCommand
                 // Appends the <CR><LF>
                 strcat(&result[0], "\r\n");
             }
-        } else strcat(&result[0], "\r\n");
+        } else strcat(&result[0], " - fsmtp\r\n");
 
         return result;
     }
