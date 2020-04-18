@@ -13,6 +13,7 @@
 
 #include "../pre.hpp"
 #include "../email.src.hpp"
+#include "../types/mime.src.hpp"
 
 namespace Fannst::FSMTPServer::MIMEParser
 {
@@ -31,7 +32,16 @@ namespace Fannst::FSMTPServer::MIMEParser
      * @param headers
      * @return
      */
-    BYTE parseHeaders(const char *raw, std::vector<Fannst::FSMTPServer::Models::EmailHeader> &headers);
+    BYTE parseHeaders(const char *raw, std::vector<Types::MimeHeader> &headers);
+
+    /**
+     * Splits an header based on ':'
+     * @param raw
+     * @param keyRet
+     * @param valRet
+     * @return
+     */
+    BYTE splitHeader(const char *raw, char **keyRet, char **valRet);
 
     /**
      * Splits an email address up in the domain, and username
@@ -41,4 +51,11 @@ namespace Fannst::FSMTPServer::MIMEParser
      * @return
      */
     int splitAddress(const char *raw, char **username, char**domain);
+
+    /**
+     * Gets the content type based value of header
+     * @param raw
+     * @return
+     */
+    Types::MimeContentType getContentType(const char *raw);
 }

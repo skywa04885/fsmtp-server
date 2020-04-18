@@ -339,13 +339,44 @@ namespace Fannst::FSMTPServer::Server
                     Responses::write(&sock_fd, ssl, message, strlen(message));
                     delete message;
 
-
+                    // ----
                     // Parses the message
-                    // Parsers::parseMime(dataBuffer, result);
-                    char *headers = nullptr;
-                    char *body = nullptr;
-                    Fannst::FSMTPServer::MIMEParser::separateHeadersAndBody(dataBuffer.c_str(), &headers, &body);
-//                    std::exit(-1);
+                    // ----
+
+                    {
+                        Timer t("MimeParser");
+
+                        char *headers = nullptr;
+                        char *body = nullptr;
+
+                        std::vector<Types::MimeHeader> headersParsed{};
+
+                        // ----
+                        // Separates the headers from the body
+                        // ----
+
+                        Fannst::FSMTPServer::MIMEParser::separateHeadersAndBody(dataBuffer.c_str(), &headers, &body);
+
+                        // ----
+                        // Parses the headers
+                        // ----
+
+                        // Parses
+                        if (Fannst::FSMTPServer::MIMEParser::parseHeaders(headers, headersParsed) < 0)
+                        {
+                            std::cout << "Went wrong ..." << std::endl;
+                        }
+
+                        // Checks for the required data, such as content type etc
+                        for (auto &h : headersParsed)
+                        {
+
+                        }
+                    }
+
+                    // ----
+                    // Configures final properties
+                    // ----
 
                     // Sets normally empty values
                     result.m_Timestamp = 0;

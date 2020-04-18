@@ -13,14 +13,14 @@ PROJECT(fsmtp_server C CXX)
 # ----
 
 ADD_LIBRARY(
-        lib_db
+        lib_db STATIC
 
         src/db/cassandra.src.hpp
         src/db/cassandra.src.cpp
 )
 
 ADD_LIBRARY(
-        server
+        server STATIC
 
         # Server itself
         src/server/server.src.hpp
@@ -42,7 +42,7 @@ ADD_LIBRARY(
 )
 
 ADD_LIBRARY(
-        models
+        models STATIC
 
         # The email models
         src/email.src.cpp
@@ -57,14 +57,14 @@ ADD_LIBRARY(
 )
 
 ADD_LIBRARY(
-        logger
+        logger STATIC
 
         src/logger.src.cpp
         src/logger.src.hpp
 )
 
 ADD_LIBRARY(
-        parsers
+        parsers STATIC
 
         # The mime parser
         src/parsers/mime-parser.src.hpp
@@ -76,7 +76,7 @@ ADD_LIBRARY(
 )
 
 ADD_LIBRARY(
-        ossl
+        ossl STATIC
 
         src/ossl/sha1.src.cpp
         src/ossl/sha256.src.cpp
@@ -84,8 +84,23 @@ ADD_LIBRARY(
         src/ossl/rsa-sha256.src.cpp
 )
 
+ADD_LIBRARY(
+        types STATIC
+
+        src/types/mime.src.hpp
+)
+
+ADD_LIBRARY(
+        debug STATIC
+
+        src/debug/timer.src.hpp
+)
+
+SET_TARGET_PROPERTIES(types PROPERTIES LINKER_LANGUAGE CXX)
+SET_TARGET_PROPERTIES(debug PROPERTIES LINKER_LANGUAGE CXX)
+
 # The libraries array
-SET(libs server parsers models logger lib_db ossl)
+SET(libs server parsers models logger lib_db ossl debug)
 
 # ----
 # The executable, and linking
