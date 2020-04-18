@@ -19,8 +19,7 @@ namespace Fannst::FSMTPServer::Types
         TEXT_HTML,
         TEXT_PLAIN,
         MULTIPART_ALTERNATIVE,
-        MULTIPART_MIXED,
-        APPLICATION_OCTET_STREAM,
+        MULTIPART_MIXED
     } MimeContentType;
 
     typedef struct

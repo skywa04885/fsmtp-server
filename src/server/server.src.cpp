@@ -368,10 +368,40 @@ namespace Fannst::FSMTPServer::Server
                         }
 
                         // Checks for the required data, such as content type etc
+                        char *klw = reinterpret_cast<char *>(malloc(65));
+                        char *cmpT = reinterpret_cast<char *>(malloc(65));
+
                         for (auto &h : headersParsed)
                         {
+                            // ----
+                            // Turns the key into an lower case char
+                            // ----
 
+                            // Copies the string value
+                            strcpy(&klw[0], &h.h_Key[0]);
+
+                            // Turns it into lower case
+                            for (char *p = &klw[0]; *p != '\0'; p++)
+                            {
+                                *p = static_cast<char>(tolower(*p));
+                            }
+
+                            // ----
+                            // Checks if the header is useful to us
+                            // ----
+
+                            if (klw[0] == 'm')
+                            { // Starts with m
+
+                            }
                         }
+
+                        // ----
+                        // Frees the memory
+                        // ----
+
+                        free(klw);
+                        free(cmpT);
                     }
 
                     // ----
@@ -400,7 +430,7 @@ namespace Fannst::FSMTPServer::Server
                     result.m_FullHeaders.push_back(Models::EmailHeader{"X-FN-ServerVersion", "FSMTP 1.0"});
 
                     // Saves the email
-                    result.save(connection.c_Session);
+//                    result.save(connection.c_Session);
 
                     continue;
                 }

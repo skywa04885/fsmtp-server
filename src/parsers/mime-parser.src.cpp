@@ -366,20 +366,57 @@ namespace Fannst::FSMTPServer::MIMEParser
      */
     Types::MimeContentType getContentType(const char *raw)
     {
-        char *t = nullptr;
+        char *t = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(64, 0)));
         Types::MimeContentType result = Types::MimeContentType::INVALID;
+
+        // ----
+        // Starts comparing
+        // ----
 
         if (raw[0] == 'm')
         { // starts with m
 
+            // Copies the string
+            t[21] = '\0';
+            memcpy(&t[0], &raw[0], 21);
+
+            // Compares
+            if (strcmp(&t[0], "multipart/alternative") == 0)
+            {
+                result = Types::MimeContentType::MULTIPART_ALTERNATIVE;
+            }
+
+            // Copies the string
+            t[15] = '\0';
+            memcpy(&t[0], &raw[0], 15);
+
+            // Compares
+            if (strcmp(&t[0], "multipart/mixed") == 0)
+            {
+                result = Types::MimeContentType::MULTIPART_MIXED;
+            }
         } else if (raw[0] == 't')
         { // starts with t
+            // Copies the string
+            t[9] = '\0';
+            memcpy(&t[0], &raw[0], 9);
 
-        } else if (raw[0] == 'a')
-        { // Starts with a
-
+            // Compares
+            if (strcmp(&t[0], "text/html") == 0)
+            {
+                result = Types::MimeContentType::TEXT_HTML;
+            } else if (strcmp(&t[0], "text/plain") == 0)
+            {
+                result = Types::MimeContentType::TEXT_PLAIN;
+            }
         }
 
+        // ----
+        // Frees the memory
+        // ----
+
         free(t);
+
+        return result;
     }
 }
