@@ -10,6 +10,56 @@
 namespace Fannst::FSMTPServer::MIMEParser
 {
     /**
+     * Removes unwanted whitespace
+     * @param a
+     * @param aLen
+     */
+    void cleanWhitespace(const char *a, std::size_t aLen, char **ret)
+    {
+        // ----
+        // Prepares the memory copy
+        // ----
+
+        // Clears existing memory, if it was not empty
+        if (*ret != nullptr) free(*ret);
+        // Reserves the memory
+        *ret = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(aLen, 0)));
+        // Resets the len so we can use it as an counter
+        aLen = 0;
+
+        // ----
+        // Starts looping
+        // ----
+
+        bool lww = false;
+        while (*a != '\0')
+        {
+            // Checks if it is whitespace
+            if (*a == ' ')
+            {
+                // If previous was whitespace, skip char
+                if (lww)
+                {
+                    a++;
+                    continue;
+                }
+
+                lww = true;
+            } else lww = false;
+
+            // Appends the char
+            (*ret)[aLen] = *a;
+
+            // Increments the indexes
+            aLen++;
+            a++;
+        }
+
+        // Sets the zero termination char
+        (*ret)[aLen] = '\0';
+    }
+
+    /**
      * Separates the headers from the body in MIME message
      * @param raw
      * @param headRet
@@ -418,5 +468,128 @@ namespace Fannst::FSMTPServer::MIMEParser
         free(t);
 
         return result;
+    }
+
+    /**
+     * Parses the name and address from an Mime Address
+     * @param raw
+     * @param name
+     * @param address
+     * @return
+     */
+    BYTE parseAddress(const char *raw, char **name, char **address)
+    {
+        const char *p = nullptr;
+        char *t = nullptr;
+        std:size_t j, k, l, size;
+        BYTE rc = 0;
+
+        // ----
+        // Prepares
+        // ----
+
+        size = strlen(&raw[0]);
+
+        // ----
+        // Finds the @ symbol
+        // ----
+
+        // Finds the '@' symbol
+        j = 0;
+        for (p = &raw[0]; *p != '\0' && *p != '@'; p++) j++;
+
+        // Checks if there was even an '@' symbol, if not return with code -1
+        if (size == j)
+        {
+            rc = -1;
+            goto parseAddressEnd;
+        }
+
+        // ----
+        // Finds the first < tag
+        // ----
+
+        // Sets k to the size of j
+        k = j;
+
+        // Gets the '@' symbol memory address
+        p = &raw[j];
+
+        // Loops over the
+        for (std::size_t i = j; i > 0; i--)
+        {
+            if (*p == '<') break;
+            // Decreases k
+            k--;
+            // Goes back one char
+            p--;
+        }
+
+        // ----
+        // Finds the closing tag
+        // ----
+
+        // Sets l to the size of j
+        l = j;
+
+        // Loops until it finds the closing tag
+        for (p = &raw[j]; *p != '\0' && *p != '>'; p++) l++;
+
+        // Checks if there was an closing tag
+        if (l == size)
+        {
+            rc = -3;
+            goto parseAddressEnd;
+        }
+
+        // ----
+        // Stores the address
+        // ----
+
+        // We do not need to use the alloc, macro because this calculation already includes the null termination char
+        *address = reinterpret_cast<char *>(malloc(l - k));
+        (*address)[l -k] = '\0';
+
+        // Copies the address into the reserved piece of memory
+        memcpy(&(*address)[0], &raw[k+1], l-k-1);
+
+        // ----
+        // Parses and stores the name
+        // ----
+
+        {
+            // Allocates the required memory
+            t = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(k, 0)));
+            t[size - k] = '\0';
+
+            // Copies the string into it
+            memcpy(&t[0], &raw[0], k);
+
+            // ----
+            // Removes spaces from the name, which are not required
+            // ----
+
+            // Cleans the whitespace
+            cleanWhitespace(&t[0], k, name);
+
+            // If whitespace at begin or end, remove it
+            if ((*name)[0] == ' ') memmove(&(*name)[0], &(*name)[1], strlen(&(*name)[0]));
+            size = strlen(&(*name)[0]);
+            if((*name)[size-1] == ' ') memmove(&(*name)[size-1], &(*name)[size], size);
+        }
+
+        // ----
+        // The end
+        // ----
+
+    parseAddressEnd:
+
+        // ----
+        // Frees the memory
+        // ----
+
+        free(t);
+
+        return rc;
     }
 }

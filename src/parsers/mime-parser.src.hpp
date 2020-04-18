@@ -18,6 +18,13 @@
 namespace Fannst::FSMTPServer::MIMEParser
 {
     /**
+     * Removes unwanted whitespace
+     * @param a
+     * @param aLen
+     */
+    void cleanWhitespace(const char *a, std::size_t aLen, char **ret);
+
+    /**
      * Separates the headers from the body in MIME message
      * @param raw
      * @param headRet
@@ -58,4 +65,13 @@ namespace Fannst::FSMTPServer::MIMEParser
      * @return
      */
     Types::MimeContentType getContentType(const char *raw);
+
+    /**
+     * Parses the name and address from an Mime Address
+     * @param raw
+     * @param name
+     * @param address
+     * @return
+     */
+    BYTE parseAddress(const char *raw, char **name, char **address);
 }

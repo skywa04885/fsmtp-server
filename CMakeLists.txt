@@ -9,6 +9,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 PROJECT(fsmtp_server C CXX)
 
 # ----
+# Compiles the real library's
+# ----
+
+# ----
 # Compiles the sub libraries
 # ----
 
@@ -69,10 +73,6 @@ ADD_LIBRARY(
         # The mime parser
         src/parsers/mime-parser.src.hpp
         src/parsers/mime-parser.src.cpp
-
-        # The old crap parser
-        src/parsers/mail-parser.src.cpp
-        src/parsers/mail-parser.src.hpp
 )
 
 ADD_LIBRARY(
@@ -96,11 +96,18 @@ ADD_LIBRARY(
         src/debug/timer.src.hpp
 )
 
+ADD_LIBRARY(
+        ds_api
+
+        src/ds-api/server.src.hpp
+        src/ds-api/server.src.cpp
+)
+
 SET_TARGET_PROPERTIES(types PROPERTIES LINKER_LANGUAGE CXX)
 SET_TARGET_PROPERTIES(debug PROPERTIES LINKER_LANGUAGE CXX)
 
 # The libraries array
-SET(libs server parsers models logger lib_db ossl debug)
+SET(libs ds_api server parsers models logger lib_db ossl debug)
 
 # ----
 # The executable, and linking
@@ -111,7 +118,8 @@ ADD_EXECUTABLE(
         ${PROJECT_NAME}
 
         main.cpp
+        mongoose/mongoose.o
 )
 
 # Links the libraries
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${libs} -lresolv -lssl -lcrypto -lpthread -lcassandra)
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${binaries} ${libs} -lresolv -lssl -lcrypto -lpthread -lcassandra)

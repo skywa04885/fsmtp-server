@@ -26,7 +26,6 @@
 #include "commands.src.hpp"
 #include "../email.src.hpp"
 #include "../parsers/mime-parser.src.hpp"
-#include "../parsers/mail-parser.src.hpp"
 #include "../user.src.hpp"
 #include "../pre.hpp"
 #include "../ossl/ossl.src.hpp"

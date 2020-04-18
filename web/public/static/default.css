@@ -1,0 +1,57 @@
+body, html
+{
+    font-family: "Source Sans Pro", sans-serif;
+    background-color: #323232;
+}
+
+.container
+{
+    max-width: 900px;
+    margin-right: auto;
+    margin-left: auto;
+    width: 100%;
+    background-color: #ffffff;
+    min-height: 100vh;
+    box-shadow: 2px 2px 9px rgba(20, 20, 20, 0.2);
+}
+
+.nav__top
+{
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+
+    /* CSS Gradient generator */
+    background: rgba(19,60,75,1);
+    background: -moz-linear-gradient(left, rgba(19,60,75,1) 0%, rgba(14,94,122,1) 50%, rgba(21,129,163,1) 51%, rgba(19,60,75,1) 100%);
+    background: -webkit-gradient(linear, left top, right top, color-stop(0%, rgba(19,60,75,1)), color-stop(50%, rgba(14,94,122,1)), color-stop(51%, rgba(21,129,163,1)), color-stop(100%, rgba(19,60,75,1)));
+    background: -webkit-linear-gradient(left, rgba(19,60,75,1) 0%, rgba(14,94,122,1) 50%, rgba(21,129,163,1) 51%, rgba(19,60,75,1) 100%);
+    background: -o-linear-gradient(left, rgba(19,60,75,1) 0%, rgba(14,94,122,1) 50%, rgba(21,129,163,1) 51%, rgba(19,60,75,1) 100%);
+    background: -ms-linear-gradient(left, rgba(19,60,75,1) 0%, rgba(14,94,122,1) 50%, rgba(21,129,163,1) 51%, rgba(19,60,75,1) 100%);
+    background: linear-gradient(to right, rgba(19,60,75,1) 0%, rgba(14,94,122,1) 50%, rgba(21,129,163,1) 51%, rgba(19,60,75,1) 100%);
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#133c4b', endColorstr='#133c4b', GradientType=1 );
+}
+
+.nav__top > div
+{
+    flex: 2;
+}
+
+.nav__top-left > a > img
+{
+    width: 256px;
+}
+
+.nav__top-right
+{
+    text-align: right;
+}
+
+.nav__top-right > h1
+{
+    color: #ffffff;
+    font-size: 1.9rem;
+    pointer-events: none;
+    user-select: none;
+    font-weight: 600;
+}

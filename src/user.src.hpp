@@ -10,6 +10,7 @@
 #include <string>
 #include <tuple>
 #include <vector>
+#include <cstring>
 
 #include <cassandra.h>
 
@@ -57,12 +58,18 @@ namespace Fannst::FSMTPServer::Models
             const char *u_Password
         );
         UserQuickAccess();
+        ~UserQuickAccess()
+        {
+            free(const_cast<char *>(this->u_Domain));
+            free(const_cast<char *>(this->u_Username));
+            free(const_cast<char *>(this->u_Password));
+        }
 
-        const char *u_Domain;
-        const char *u_Username;
+        const char *u_Domain{nullptr};
+        const char *u_Username{nullptr};
         CassUuid u_Uuid;
         cass_int64_t u_Bucket;
-        const char *u_Password;
+        const char *u_Password{nullptr};
 
         static int selectByDomainAndUsername(CassSession *session, const char *domain, const char *username, UserQuickAccess &target);
     };

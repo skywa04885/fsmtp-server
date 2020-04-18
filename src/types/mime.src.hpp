@@ -24,8 +24,8 @@ namespace Fannst::FSMTPServer::Types
 
     typedef struct
     {
-        char *h_Key;
-        char *h_Value;
+        const char *h_Key;
+        const char *h_Value;
     } MimeHeader;
 
     typedef struct

@@ -15,6 +15,8 @@
 
 #include <cassandra.h>
 
+#include "types/mime.src.hpp"
+
 namespace Fannst::FSMTPServer::Models
 {
     typedef enum {
@@ -29,20 +31,15 @@ namespace Fannst::FSMTPServer::Models
     } EmailContentSectionType;
 
     typedef struct {
-        std::string e_Key;
-        std::string e_Value;
-    } EmailHeader;
-
-    typedef struct {
         std::string e_Content;
         EmailContentSectionType e_Type;
-        std::vector<EmailHeader> e_FullHeaders;
+        std::vector<Types::MimeHeader> e_FullHeaders;
         int e_Index;
     } EmailContentSection;
 
     typedef struct {
-        std::string e_Name;
-        std::string e_Address;
+        const char *e_Name;
+        const char *e_Address;
     } EmailAddress;
 
     class Email
@@ -51,10 +48,10 @@ namespace Fannst::FSMTPServer::Models
         // The quick access variables
         EmailAddress m_TransportTo;
         EmailAddress m_TransportFrom;
-        std::string m_Subject;
-        std::string m_MessageID;
-        std::string m_Date;
-        std::string m_Boundary;
+        const char *m_Subject{nullptr};
+        const char *m_MessageID{nullptr};
+        const char *m_Date{nullptr};
+        const char *m_Boundary{nullptr};
         EmailContentType m_ContentType;
         long m_Bucket;
         // User data
@@ -66,11 +63,33 @@ namespace Fannst::FSMTPServer::Models
         // The full data vectors
         std::vector<EmailAddress> m_From;
         std::vector<EmailAddress> m_To;
-        std::vector<EmailHeader> m_FullHeaders;
+        std::vector<Types::MimeHeader> m_FullHeaders;
         std::vector<EmailContentSection> m_Content;
         // Methods
         int save(CassSession *session);
         static long getCurrentBucket();
+        // Constructor and destructor
+        ~Email()
+        {
+            // Frees the const char pointers
+            free(const_cast<char *>(this->m_Subject));
+            free(const_cast<char *>(this->m_Boundary));
+            free(const_cast<char *>(this->m_MessageID));
+            free(const_cast<char *>(this->m_Date));
+
+            // Frees the headers
+            for (auto &a : this->m_FullHeaders)
+            {
+                free(const_cast<char *>(a.h_Value));
+                free(const_cast<char *>(a.h_Key));
+            }
+
+            // Frees the addresses
+            free(const_cast<char *>(this->m_TransportFrom.e_Name));
+            free(const_cast<char *>(this->m_TransportFrom.e_Address));
+            free(const_cast<char *>(this->m_TransportTo.e_Address));
+            free(const_cast<char *>(this->m_TransportTo.e_Name));
+        }
     };
 };
 
@@ -111,14 +130,14 @@ inline std::ostream &operator << (std::ostream &out, Fannst::FSMTPServer::Models
 // Overloads the EmailAddress struct
 inline std::ostream &operator << (std::ostream &out, Fannst::FSMTPServer::Models::EmailAddress const &data)
 {
-    out << (data.e_Name.empty() ? "Unknown" : data.e_Name) << " <" << data.e_Address << ">";
+    out << data.e_Name << " <" << data.e_Address << ">";
     return out;
 }
 
 // Overloads the EmailAddress struct
-inline std::ostream &operator << (std::ostream &out, Fannst::FSMTPServer::Models::EmailHeader const &data)
+inline std::ostream &operator << (std::ostream &out, Fannst::FSMTPServer::Types::MimeHeader const &data)
 {
-    out << data.e_Key << ": " << data.e_Value;
+    out << data.h_Key << ": " << data.h_Value;
     return out;
 }
 

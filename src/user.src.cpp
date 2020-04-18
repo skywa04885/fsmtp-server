@@ -101,10 +101,15 @@ namespace Fannst::FSMTPServer::Models
 
         // Creates the QuickUserAccess instance
         target.u_Bucket = res_bucket;
-        target.u_Domain = domain;
-        target.u_Password = res_password;
+
+        target.u_Domain = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(strlen(&domain[0]), 0)));
+        memcpy(&const_cast<char *>(target.u_Domain)[0], &domain[0], strlen(&domain[0]) + 1);
+        target.u_Password = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(strlen(&res_password[0]), 0)));
+        memcpy(&const_cast<char *>(target.u_Password)[0], &res_password[0], strlen(&res_password[0]) + 1);
+        target.u_Username = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(strlen(&username[0]), 0)));
+        memcpy(&const_cast<char *>(target.u_Username)[0], &username[0], strlen(&username[0]) + 1);
+
         target.u_Uuid = res_uuid;
-        target.u_Username = username;
 
         // Frees the memory
         cass_future_free(query_future);

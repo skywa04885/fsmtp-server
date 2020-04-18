@@ -54,8 +54,8 @@ namespace Fannst::FSMTPServer::Models
         CassUserType *m_transport_to = cass_user_type_new_from_data_type(udt_email_address);
 
         // Assigns the values
-        cass_user_type_set_string_by_name(m_transport_to, "e_name", this->m_TransportTo.e_Name.c_str());
-        cass_user_type_set_string_by_name(m_transport_to, "e_address", this->m_TransportTo.e_Address.c_str());
+        cass_user_type_set_string_by_name(m_transport_to, "e_name", this->m_TransportTo.e_Name);
+        cass_user_type_set_string_by_name(m_transport_to, "e_address", this->m_TransportTo.e_Address);
 
         /**
          * 3. Creates the m_transport_from
@@ -65,8 +65,8 @@ namespace Fannst::FSMTPServer::Models
         CassUserType *m_transport_from = cass_user_type_new_from_data_type(udt_email_address);
 
         // Assigns the values
-        cass_user_type_set_string_by_name(m_transport_from, "e_name", this->m_TransportFrom.e_Name.c_str());
-        cass_user_type_set_string_by_name(m_transport_from, "e_address", this->m_TransportFrom.e_Address.c_str());
+        cass_user_type_set_string_by_name(m_transport_from, "e_name", this->m_TransportFrom.e_Name);
+        cass_user_type_set_string_by_name(m_transport_from, "e_address", this->m_TransportFrom.e_Address);
 
         /**
          * 4. Creates the m_from
@@ -81,8 +81,8 @@ namespace Fannst::FSMTPServer::Models
             CassUserType *m_from_temp = cass_user_type_new_from_data_type(udt_email_address);
 
             // Sets the values
-            cass_user_type_set_string_by_name(m_from_temp, "e_name", address.e_Name.c_str());
-            cass_user_type_set_string_by_name(m_from_temp, "e_address", address.e_Address.c_str());
+            cass_user_type_set_string_by_name(m_from_temp, "e_name", address.e_Name);
+            cass_user_type_set_string_by_name(m_from_temp, "e_address", address.e_Address);
 
             // Appends it to the list
             cass_collection_append_user_type(m_from, m_from_temp);
@@ -104,8 +104,8 @@ namespace Fannst::FSMTPServer::Models
             CassUserType *m_to_temp = cass_user_type_new_from_data_type(udt_email_address);
 
             // Sets the values
-            cass_user_type_set_string_by_name(m_to_temp, "e_name", address.e_Name.c_str());
-            cass_user_type_set_string_by_name(m_to_temp, "e_address", address.e_Address.c_str());
+            cass_user_type_set_string_by_name(m_to_temp, "e_name", address.e_Name);
+            cass_user_type_set_string_by_name(m_to_temp, "e_address", address.e_Address);
 
             // Appends it to the list
             cass_collection_append_user_type(m_to, m_to_temp);
@@ -127,8 +127,8 @@ namespace Fannst::FSMTPServer::Models
             CassUserType *m_full_headers_temp = cass_user_type_new_from_data_type(udt_email_header);
 
             // Sets the values
-            cass_user_type_set_string_by_name(m_full_headers_temp, "e_key", header.e_Key.c_str());
-            cass_user_type_set_string_by_name(m_full_headers_temp, "e_value", header.e_Value.c_str());
+            cass_user_type_set_string_by_name(m_full_headers_temp, "e_key", header.h_Key);
+            cass_user_type_set_string_by_name(m_full_headers_temp, "e_value", header.h_Value);
 
             // Appends it to the list
             cass_collection_append_user_type(m_full_headers, m_full_headers_temp);
@@ -159,8 +159,8 @@ namespace Fannst::FSMTPServer::Models
                 CassUserType *m_content_section_header_temp = cass_user_type_new_from_data_type(udt_email_header);
 
                 // Sets the variables
-                cass_user_type_set_string_by_name(m_content_section_header_temp, "e_key", header.e_Key.c_str());
-                cass_user_type_set_string_by_name(m_content_section_header_temp, "e_value", header.e_Value.c_str());
+                cass_user_type_set_string_by_name(m_content_section_header_temp, "e_key", header.h_Key);
+                cass_user_type_set_string_by_name(m_content_section_header_temp, "e_value", header.h_Value);
 
                 // Appends to the collection
                 cass_collection_append_user_type(m_content_section_headers_temp, m_content_section_header_temp);
@@ -207,10 +207,10 @@ namespace Fannst::FSMTPServer::Models
         // Binds the values
         cass_statement_bind_user_type(statement, 0, m_transport_to);
         cass_statement_bind_user_type(statement, 1, m_transport_from);
-        cass_statement_bind_string(statement, 2, this->m_Subject.c_str());
-        cass_statement_bind_string(statement, 3, this->m_MessageID.c_str());
+        cass_statement_bind_string(statement, 2, this->m_Subject);
+        cass_statement_bind_string(statement, 3, this->m_MessageID);
         cass_statement_bind_int64(statement, 4, 500);
-        cass_statement_bind_string(statement, 5, this->m_Boundary.c_str());
+        cass_statement_bind_string(statement, 5, this->m_Boundary);
         cass_statement_bind_int32(statement, 6, this->m_ContentType);
         cass_statement_bind_int64(statement, 7, this->m_Timestamp);
         cass_statement_bind_int64(statement, 8, this->m_ReceiveTimestamp);

@@ -24,6 +24,9 @@ namespace Fannst::FSMTPServer::ESMTPModules
         bool handleMailFrom(const int *soc, SSL *ssl, const char *args, Models::Email &email,
                 Server::ConnPhasePT &phasePt, Models::UserQuickAccess *pUserQuickAccess)
         {
+            char *name = nullptr;
+            char *address = nullptr;
+
             // ----
             // Verifies the data and sequence
             // ----
@@ -51,13 +54,16 @@ namespace Fannst::FSMTPServer::ESMTPModules
             // ----
 
             // Parses the email address from the args, if invalid: send syntax error
-            if (Parsers::parseAddress(args, email.m_TransportFrom) < 0)
+            if (MIMEParser::parseAddress(args, &name, &address) < 0)
             {
                 // Writes the syntax error
                 Responses::syntaxError(soc, ssl);
                 // Returns false, close connection
                 return false;
             }
+            // Sets the email values
+            email.m_TransportFrom.e_Address = address;
+            email.m_TransportFrom.e_Name = name;
 
             // ----
             // Checks if the sender is from fannst.nl, if so make sure he is authorized to do this
@@ -205,6 +211,8 @@ namespace Fannst::FSMTPServer::ESMTPModules
         bool handleRcptTo(const int *soc, SSL *ssl, const char *args, Models::Email &email,
                 Server::ConnPhasePT &phasePt, CassSession *cassSession, Models::UserQuickAccess *pUserQuickAccess)
         {
+            char *name = nullptr;
+            char *address = nullptr;
             bool rc = true;
 
             // ----
@@ -230,13 +238,17 @@ namespace Fannst::FSMTPServer::ESMTPModules
                 return false;
             }
 
-            // Parses the address
-            if (Parsers::parseAddress(args, email.m_TransportTo) < 0)
+            // Parses the email address from the args, if invalid: send syntax error
+            if (MIMEParser::parseAddress(args, &name, &address) < 0)
             {
+                // Writes the syntax error
                 Responses::syntaxError(soc, ssl);
-                // No memory allocated, so just return
+                // Returns false, close connection
                 return false;
             }
+            // Sets the email values
+            email.m_TransportTo.e_Address = address;
+            email.m_TransportTo.e_Name = name;
 
             // ----
             // Splits the domain name from the address
@@ -247,7 +259,7 @@ namespace Fannst::FSMTPServer::ESMTPModules
             char *domain = nullptr;
 
             // Checks if the parsing went good, if not return server error
-            if (MIMEParser::splitAddress(&email.m_TransportTo.e_Address.c_str()[0], &username, &domain) < 0)
+            if (MIMEParser::splitAddress(&email.m_TransportTo.e_Address[0], &username, &domain) < 0)
             {
                 // Sends the response message
                 char *message = ServerCommand::gen(501, "Syntax Error: could not parse address",

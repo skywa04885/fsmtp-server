@@ -1,0 +1,61 @@
+.container__main
+{
+    display: flex;
+}
+
+.container__main > div
+{
+    padding: 1rem;
+    flex: 3;
+}
+
+.container__main-left > h2, .container__main-right > h3
+{
+    font-size: 2rem;
+    color: #282828;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+    font-family: "Oswald", sans-serif;
+}
+
+.container__main-left > hr
+{
+    border: none;
+    border-top: 1px solid #666666;
+}
+
+.container__main-left > p
+{
+    margin-bottom: 0.6rem;
+    color: #3d3d3d;
+}
+
+.container__main-left > p > strong
+{
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.container__main-left > ul > li:not(:last-child)
+{
+    margin-bottom: 0.3rem;
+}
+
+.container__main-left > ul > li > a
+{
+    color: #3366cc;
+    text-decoration: none;
+    font-size: 1rem;
+}
+
+.container__main-left > ul > li > a:hover
+{
+    text-decoration: underline;
+}
+
+.container__main-right > p
+{
+    color: #454545;
+    line-height: 1.2rem;
+    font-size: 1rem;
+}

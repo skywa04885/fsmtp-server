@@ -393,6 +393,14 @@ namespace Fannst::FSMTPServer::Server
                             if (klw[0] == 'm')
                             { // Starts with m
 
+                                // Copies the text
+                                cmpT[10] = '\0';
+                                memcpy(&cmpT[0], &klw[0], 10);
+
+                                if (strcmp(&cmpT[0], "message-id") == 0)
+                                { // Is the message id
+
+                                }
                             }
                         }
 
@@ -424,10 +432,6 @@ namespace Fannst::FSMTPServer::Server
                     CassUuidGen *uuidGen = cass_uuid_gen_new();
                     cass_uuid_gen_time(uuidGen, &result.m_UUID);
                     cass_uuid_gen_free(uuidGen);
-
-                    // Sets the receive params
-                    result.m_FullHeaders.push_back(Models::EmailHeader{"X-FN-TransportType", ssl == nullptr ? "START TLS" : "Plain Text"});
-                    result.m_FullHeaders.push_back(Models::EmailHeader{"X-FN-ServerVersion", "FSMTP 1.0"});
 
                     // Saves the email
 //                    result.save(connection.c_Session);
@@ -492,9 +496,9 @@ namespace Fannst::FSMTPServer::Server
 
                 case ServerCommand::SMTPServerCommand::START_TLS: {
                     // Writes the message
-                    const char *message = ServerCommand::gen(220, "Ok: continue", nullptr, 0);
+                    char *message = ServerCommand::gen(220, "Ok: continue", nullptr, 0);
                     Responses::write(&sock_fd, ssl, message, strlen(message));
-                    delete message;
+                    free(message);
 
                     // ----
                     // Initializes OpenSSL
@@ -613,6 +617,12 @@ namespace Fannst::FSMTPServer::Server
                     goto end;
                 }
             }
+
+            // ----
+            // Frees the memory
+            // ----
+
+            free(const_cast<char *>(currentCommandArgs));
         }
 
         // ----
