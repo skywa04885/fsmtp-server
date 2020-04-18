@@ -335,9 +335,9 @@ namespace Fannst::FSMTPServer::Server
                     connPhasePt = ConnPhasePT::PHASE_PT_DATA_END;
 
                     // Sends the message
-                    const char *message = ServerCommand::gen(250, "Ok: queued as 0", nullptr, 0);
-                    Responses::write(&sock_fd, ssl, message, strlen(message));
-                    delete message;
+                    char *msg = ServerCommand::gen(250, "Ok: queued as 0", nullptr, 0);
+                    Responses::write(&sock_fd, ssl, msg, strlen(msg));
+                    free(msg);
 
                     // ----
                     // Parses the message
@@ -348,8 +348,6 @@ namespace Fannst::FSMTPServer::Server
 
                         char *headers = nullptr;
                         char *body = nullptr;
-
-                        std::vector<Types::MimeHeader> headersParsed{};
 
                         // ----
                         // Separates the headers from the body
@@ -362,7 +360,7 @@ namespace Fannst::FSMTPServer::Server
                         // ----
 
                         // Parses
-                        if (Fannst::FSMTPServer::MIMEParser::parseHeaders(headers, headersParsed) < 0)
+                        if (Fannst::FSMTPServer::MIMEParser::parseHeaders(headers, result.m_FullHeaders) < 0)
                         {
                             std::cout << "Went wrong ..." << std::endl;
                         }
@@ -371,8 +369,12 @@ namespace Fannst::FSMTPServer::Server
                         char *klw = reinterpret_cast<char *>(malloc(65));
                         char *cmpT = reinterpret_cast<char *>(malloc(65));
 
-                        for (auto &h : headersParsed)
+                        std::size_t hValueLen;
+
+                        for (auto &h : result.m_FullHeaders)
                         {
+                            hValueLen = strlen(&h.h_Value[0]);
+
                             // ----
                             // Turns the key into an lower case char
                             // ----
@@ -391,15 +393,126 @@ namespace Fannst::FSMTPServer::Server
                             // ----
 
                             if (klw[0] == 'm')
-                            { // Starts with m
+                            { // Starts with m, possible "message-id"
 
                                 // Copies the text
                                 cmpT[10] = '\0';
                                 memcpy(&cmpT[0], &klw[0], 10);
 
+                                // Compares the strings
                                 if (strcmp(&cmpT[0], "message-id") == 0)
                                 { // Is the message id
 
+                                    // Allocates the memory for the message id
+                                    result.m_MessageID = reinterpret_cast<const char *>(malloc(
+                                            ALLOC_CAS_STRING(hValueLen, 0)));
+
+                                    // Copies the value
+                                    memcpy(&const_cast<char *>(result.m_MessageID)[0], &h.h_Value[0], hValueLen + 1);
+                                }
+                            } else if (klw[0] == 's')
+                            { // starts with 's' possible "subject"
+
+                                // Copies the text
+                                cmpT[7] = '\0';
+                                memcpy(&cmpT[0], &klw[0], 7);
+
+                                // Compares the strings
+                                if (strcmp(&cmpT[0], "subject") == 0)
+                                {
+                                    // Allocates the memory for the message id
+                                    result.m_Subject = reinterpret_cast<const char *>(malloc(
+                                            ALLOC_CAS_STRING(hValueLen, 0)));
+
+                                    // Copies the value
+                                    memcpy(&const_cast<char *>(result.m_Subject)[0], &h.h_Value[0], hValueLen + 1);
+                                }
+                            } else if (klw[0] == 'c')
+                            { // starts with 'c', possible "content-type"
+                                // Copies the text
+                                cmpT[12] = '\0';
+                                memcpy(&cmpT[0], &klw[0], 12);
+
+                                // Compares the strings
+                                if (strcmp(&cmpT[0], "content-type") == 0)
+                                {
+                                    std::vector<const char *> nkValues{};
+                                    std::map<const char *, const char *> kValues{};
+
+                                    // ----
+                                    // Starts parsing
+                                    // ----
+
+                                    // Parses the arguments
+                                    MIMEParser::parseHeaderParameters(h.h_Value, nkValues, kValues);
+
+                                    // Gets the content type
+                                    result.m_ContentType = MIMEParser::getContentType(nkValues.at(0));
+
+                                    // Finds the boundary
+                                    for (auto it = kValues.begin(); it != kValues.end(); it++)
+                                    {
+                                        // If not starting with b, it is not boundary
+                                        if (it->first[0] != 'b') continue;
+
+                                        // Checks if it is the boundary
+                                        if (strcmp(&it->first[0], "boundary") == 0)
+                                        {
+                                            // Allocates the memory
+                                            result.m_Boundary = reinterpret_cast<char *>(
+                                                    malloc(ALLOC_CAS_STRING(strlen(&it->second[0]), 0)));
+
+                                            // Copies the boundary
+                                            memcpy(const_cast<char *>(&result.m_Boundary[0]),
+                                                    &it->second[0], strlen(&it->second[0]) + 1);
+                                        }
+                                    }
+
+                                    // ----
+                                    // Frees the memory
+                                    // ----
+
+                                    // Frees the no key values
+                                    for (const char *a : nkValues) free(const_cast<char *>(a));
+
+                                    // Frees the keyed values
+                                    for (auto it = kValues.begin(); it != kValues.end(); it++)
+                                    {
+                                        free(const_cast<char *>(it->first));
+                                        free(const_cast<char *>(it->second));
+                                    }
+                                }
+                            } else if (klw[0] == 'f')
+                            { // Starts with 'f', possible "from"
+
+                                // Copies the text
+                                cmpT[4] = '\0';
+                                memcpy(&cmpT[0], &klw[0], 4);
+
+                                // Compares the strings
+                                if (strcmp(&cmpT[0], "from") == 0)
+                                {
+                                    // Parses the addresses
+                                    if (MIMEParser::parseAddressList(&h.h_Value[0], result.m_From) < 0)
+                                    {
+                                        // TODO: Handle error
+                                    }
+                                }
+                            } else if (klw[0] == 't')
+                            { // Starts with 't', possible 'to'
+
+                                // Copies the text
+                                cmpT[2] = '\0';
+                                memcpy(&cmpT[0], &klw[0], 2);
+
+                                // Compares the strings
+                                if (strcmp(&cmpT[0], "to") == 0)
+                                {
+                                    // Parses the addresses
+                                    if (MIMEParser::parseAddressList(&h.h_Value[0], result.m_To) < 0)
+                                    {
+                                        // TODO: Handle error
+                                    }
                                 }
                             }
                         }
@@ -434,6 +547,7 @@ namespace Fannst::FSMTPServer::Server
                     cass_uuid_gen_free(uuidGen);
 
                     // Saves the email
+                    std::cout << result << std::endl;
 //                    result.save(connection.c_Session);
 
                     continue;
@@ -451,10 +565,6 @@ namespace Fannst::FSMTPServer::Server
 
             switch (currentCommand)
             {
-                // ----
-                // HELLO
-                // ----
-
                 case ServerCommand::SMTPServerCommand::HELLO: {
                     if (!ESMTPModules::Default::handleHello(&sock_fd, ssl, currentCommandArgs, connPhasePt, sockaddrIn))
                     {
@@ -463,11 +573,6 @@ namespace Fannst::FSMTPServer::Server
                     }
                     break;
                 }
-
-                // ----
-                // MAIL FROM
-                // ----
-
                 case ServerCommand::SMTPServerCommand::MAIL_FROM: {
                     if (!ESMTPModules::Default::handleMailFrom(&sock_fd, ssl, currentCommandArgs, result, connPhasePt, userQuickAccess))
                     {
@@ -476,11 +581,6 @@ namespace Fannst::FSMTPServer::Server
                     }
                     break;
                 }
-
-                // ----
-                // RCPT TO
-                // ----
-
                 case ServerCommand::SMTPServerCommand::RCPT_TO: {
                     if (!ESMTPModules::Default::handleRcptTo(&sock_fd, ssl, currentCommandArgs, result, connPhasePt, connection.c_Session, userQuickAccess))
                     {
@@ -489,11 +589,6 @@ namespace Fannst::FSMTPServer::Server
                     }
                     break;
                 }
-
-                // ----
-                // START TLS
-                // ----
-
                 case ServerCommand::SMTPServerCommand::START_TLS: {
                     // Writes the message
                     char *message = ServerCommand::gen(220, "Ok: continue", nullptr, 0);
@@ -575,29 +670,14 @@ namespace Fannst::FSMTPServer::Server
                     // Breaks
                     break;
                 }
-
-                // ----
-                // QUIT
-                // ----
-
                 case ServerCommand::SMTPServerCommand::QUIT: {
                     ESMTPModules::Default::handleQuit(&sock_fd, ssl);
                     goto end;
                 }
-
-                // ----
-                // HELP
-                // ----
-
                 case ServerCommand::SMTPServerCommand::HELP: {
                     ESMTPModules::Default::handleHelp(&sock_fd, ssl);
                     break;
                 }
-
-                // ----
-                // AUTH
-                // ----
-
                 case ServerCommand::SMTPServerCommand::AUTH: {
                     if (!ESMTPModules::Auth::handleAuth(&sock_fd, ssl, currentCommandArgs, connection.c_Session, &userQuickAccess))
                     {
@@ -606,11 +686,6 @@ namespace Fannst::FSMTPServer::Server
                     }
                     break;
                 }
-
-                // ----
-                // Syntax Error, because of invalid command
-                // ----
-
                 default: {
                     Responses::syntaxError(&sock_fd, ssl);
                     err = true;
@@ -631,12 +706,8 @@ namespace Fannst::FSMTPServer::Server
 
         end:
             // If required free memory
-            if (ssl != nullptr)
-            {
-                SSL_shutdown(ssl);
-                SSL_free(ssl);
-                SSL_CTX_free(sslCtx);
-            }
+            if (ssl != nullptr) { SSL_shutdown(ssl); SSL_free(ssl); }
+            if (sslCtx != nullptr) SSL_CTX_free(sslCtx);
 
             if (userQuickAccess != nullptr) free(userQuickAccess);
 
@@ -644,7 +715,7 @@ namespace Fannst::FSMTPServer::Server
             shutdown(sock_fd, SHUT_RDWR);
 
             // Deletes the sockaddrIn
-            delete sockaddrIn;
+            free(sockaddrIn);
 
             // Makes thread available
             _usedThreads--;

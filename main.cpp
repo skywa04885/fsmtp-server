@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
         print << "FSMTP starting ..." << Fannst::FSMTPServer::Logger::ConsoleOptions::ENDL;
 
         // Creates the server
-        Fannst::FSMTPServer::Server::run(25, &argc, &argv);
+        Fannst::FSMTPServer::Server::run(1224, &argc, &argv);
     }
 
     // ----

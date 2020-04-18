@@ -146,7 +146,6 @@ namespace Fannst::FSMTPServer::ESMTPModules
             // ----
 
             char *message;
-
             if (ssl == nullptr)
             {
                 // Creates the arguments list
@@ -162,7 +161,15 @@ namespace Fannst::FSMTPServer::ESMTPModules
                 message = ServerCommand::gen(250, &temp[0], argList,
                         sizeof(argList) / sizeof(const char *));
             }
+
+            // Writes the response message
             Responses::write(soc, ssl, message, strlen(message));
+
+            // ----
+            // Frees the memory
+            // ----
+
+            free(temp);
             free(message);
 
             // Updates the phase

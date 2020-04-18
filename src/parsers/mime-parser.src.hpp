@@ -10,6 +10,7 @@
 #include <cstring>
 #include <malloc.h>
 #include <vector>
+#include <map>
 
 #include "../pre.hpp"
 #include "../email.src.hpp"
@@ -74,4 +75,22 @@ namespace Fannst::FSMTPServer::MIMEParser
      * @return
      */
     BYTE parseAddress(const char *raw, char **name, char **address);
+
+    /**
+     * Parses an header value, which may contain both keyed parameters, and non-keyed parameters
+     * @param raw
+     * @param nkParams
+     * @param kParams
+     * @return
+     */
+    BYTE parseHeaderParameters(const char *raw, std::vector<const char *> &nkParams,
+            std::map<const char *, const char *> &kParams);
+
+    /**
+     * Parses an list of email addresses
+     * @param raw
+     * @param ret
+     * @return
+     */
+    BYTE parseAddressList(const char *raw, std::vector<Types::EmailAddress> &ret);
 }

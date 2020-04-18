@@ -34,4 +34,10 @@ namespace Fannst::FSMTPServer::Types
         char *s_Content;
         std::vector<MimeHeader> s_FullHeaders;
     } MimeMultipartBodySection;
+
+    typedef struct
+    {
+        const char *e_Name;
+        const char *e_Address;
+    } EmailAddress;
 }

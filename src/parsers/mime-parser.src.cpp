@@ -319,7 +319,7 @@ namespace Fannst::FSMTPServer::MIMEParser
         // Allocates and copies the value of the value
         *valRet = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(hLen - i - 1, 0)));
         (*valRet)[hLen - i - 1] = '\0';
-        memcpy(&(*valRet)[0], &raw[i + 1], hLen - i - 1);
+        memcpy(&(*valRet)[0], &raw[i + 1], hLen - i);
 
         // ----
         // Removes the space at the begin, if there
@@ -548,7 +548,7 @@ namespace Fannst::FSMTPServer::MIMEParser
 
         // We do not need to use the alloc, macro because this calculation already includes the null termination char
         *address = reinterpret_cast<char *>(malloc(l - k));
-        (*address)[l -k] = '\0';
+        (*address)[l-k-1] = '\0';
 
         // Copies the address into the reserved piece of memory
         memcpy(&(*address)[0], &raw[k+1], l-k-1);
@@ -560,7 +560,7 @@ namespace Fannst::FSMTPServer::MIMEParser
         {
             // Allocates the required memory
             t = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(k, 0)));
-            t[size - k] = '\0';
+            t[k] = '\0';
 
             // Copies the string into it
             memcpy(&t[0], &raw[0], k);
@@ -589,6 +589,189 @@ namespace Fannst::FSMTPServer::MIMEParser
         // ----
 
         free(t);
+
+        return rc;
+    }
+    /**
+     * Parses an header value, which may contain both keyed parameters, and non-keyed parameters
+     * @param raw
+     * @param nkParams
+     * @param kParams
+     * @return
+     */
+    BYTE parseHeaderParameters(const char *raw, std::vector<const char *> &nkParams,
+                               std::map<const char *, const char *> &kParams)
+    {
+        char *rawC = nullptr, *tok = nullptr, *t = nullptr, *tv = nullptr;
+
+        std::size_t size, j, k, l;
+
+        BYTE rc = 0;
+
+        // ----
+        // Creates an copy of the data
+        // ----
+
+        // Gets the length of raw
+        size = strlen(&raw[0]);
+
+        // Allocates the memory for the copy, and copies the memory data
+        rawC = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(size, 0)));
+        memcpy(&rawC[0], &raw[0], size + 1);
+
+        // ----
+        // Prepares the tokenizer
+        // ----
+
+        // Creates the tokenizer
+        tok = strtok(&rawC[0], ";");
+
+        // ----
+        // Starts the loop
+        // ----
+
+        while (tok != nullptr)
+        {
+            // Gets the length of the token
+            k = strlen(&tok[0]);
+
+            // Checks if the token contains an '=', if so... We know it is most likely key value based
+            j = 0;
+            for (char *p = &tok[0]; *p != '\0' && *p != '='; p++) j++;
+
+            // Checks if the equals sign was there, if not immediately append the result to the nkParams
+            if (j == k)
+            {
+                // Allocates the memory, and stores an copy
+                t = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(k, 0)));
+                memcpy(&t[0], &tok[0], k + 1);
+
+                // Pushes the data to an new pointer inside of the nkParams vector
+                nkParams.emplace_back(t);
+            } else
+            {
+                // ----
+                // Gets the key
+                // ----
+
+                // Allocates the memory for the key, and stores an copy
+                t = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(j, 0)));
+                t[j] = '\0';
+                memcpy(&t[0], &tok[0], j);
+
+                // ----
+                // Gets the value
+                // ----
+
+                // Gets the size to allocate
+                l = k - j;
+
+                // Allocates the memory for the value, and stores an copy
+                tv = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(l, 0)));
+                tv[l] = '\0';
+                memcpy(&tv[0], &tok[j+1], l);
+
+                // ----
+                // If there, remove '"'
+                // ----
+
+                // If there is an '"' at the begin, remove it
+                if (tv[0] == '"') memmove(&tv[0], &tv[1], strlen(&tv[0]));
+
+                // Store J because, we use j 3 times, which can be reduced to one calculation with this
+                j = strlen(&tv[0]);
+
+                // If '"' at string end, remove it
+                if (tv[j-1] == '"') tv[j-1] = '\0';
+
+                // ----
+                // Appends the to the result array
+                // ----
+
+                kParams.insert(std::make_pair(t, tv));
+            }
+
+            // Goes to the next token
+            tok = strtok(nullptr, ";");
+        }
+
+        // ----
+        // Frees the memory
+        // ----
+
+        free(rawC);
+
+        return rc;
+    }
+
+    /**
+     * Parses an list of email addresses
+     * @param raw
+     * @param ret
+     * @return
+     */
+    BYTE parseAddressList(const char *raw, std::vector<Types::EmailAddress> &ret)
+    {
+        char *rawC = nullptr, *tok = nullptr, *name = nullptr, *address = nullptr;
+
+        BYTE rc = 0;
+
+        std::size_t tempLen;
+
+        // ----
+        // Creates an copy of the data
+        // ----
+
+        // Gets the length of raw
+        tempLen = strlen(&raw[0]);
+
+        // Allocates the required memory
+        rawC = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(tempLen, 0)));
+
+        // Copies the string
+        memcpy(&rawC[0], &raw[0], tempLen + 1);
+
+        // ----
+        // Prepares the tokenizer
+        // ----
+
+        // Gets the first token
+        tok = strtok(&rawC[0], ",");
+
+        // ----
+        // Starts the loop
+        // ----
+
+        while (tok != nullptr)
+        {
+            // Parses the address
+            if (parseAddress(&tok[0], &name, &address) < 0)
+            {
+                // Sets the return code
+                rc = -1;
+
+                // Goes to the end
+                goto parseAddressList;
+            }
+
+            // Pushes the data to the vector
+            ret.emplace_back(Types::EmailAddress{name, address});
+
+            // Goes to the next token
+            tok = strtok(nullptr, ",");
+        }
+
+        // ----
+        // The end
+        // ----
+
+    parseAddressList:
+
+        // ----
+        // Frees the memory
+        // ----
+
+        free(rawC);
 
         return rc;
     }
