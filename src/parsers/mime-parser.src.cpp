@@ -416,58 +416,19 @@ namespace Fannst::FSMTPServer::MIMEParser
      */
     Types::MimeContentType getContentType(const char *raw)
     {
-        char *t = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(64, 0)));
-        Types::MimeContentType result = Types::MimeContentType::INVALID;
-
-        // ----
-        // Starts comparing
-        // ----
-
-        if (raw[0] == 'm')
-        { // starts with m
-
-            // Copies the string
-            t[21] = '\0';
-            memcpy(&t[0], &raw[0], 21);
-
-            // Compares
-            if (strcmp(&t[0], "multipart/alternative") == 0)
-            {
-                result = Types::MimeContentType::MULTIPART_ALTERNATIVE;
-            }
-
-            // Copies the string
-            t[15] = '\0';
-            memcpy(&t[0], &raw[0], 15);
-
-            // Compares
-            if (strcmp(&t[0], "multipart/mixed") == 0)
-            {
-                result = Types::MimeContentType::MULTIPART_MIXED;
-            }
-        } else if (raw[0] == 't')
-        { // starts with t
-            // Copies the string
-            t[9] = '\0';
-            memcpy(&t[0], &raw[0], 9);
-
-            // Compares
-            if (strcmp(&t[0], "text/html") == 0)
-            {
-                result = Types::MimeContentType::TEXT_HTML;
-            } else if (strcmp(&t[0], "text/plain") == 0)
-            {
-                result = Types::MimeContentType::TEXT_PLAIN;
-            }
-        }
-
-        // ----
-        // Frees the memory
-        // ----
-
-        free(t);
-
-        return result;
+        if (raw[0] == 'm' && strcmp(&raw[0], "multipart/alternative") == 0)
+        { // is multipart/alternative
+            return Types::MimeContentType::MULTIPART_ALTERNATIVE;
+        } else if (raw[0] == 'm' && strcmp(&raw[0], "multipart/mixed") == 0)
+        { // Is multipart/mixed
+            return Types::MimeContentType::MULTIPART_MIXED;
+        } else if (raw[0] == 't' && strcmp(&raw[0], "text/plain") == 0)
+        { // Is multipart/mixed
+            return Types::MimeContentType::TEXT_PLAIN;
+        } else if (raw[0] == 't' && strcmp(&raw[0], "text/html") == 0)
+        { // Is multipart/mixed
+            return Types::MimeContentType::TEXT_HTML;
+        } else return Types::MimeContentType::INVALID;
     }
 
     /**
@@ -784,13 +745,15 @@ namespace Fannst::FSMTPServer::MIMEParser
      * @return
      */
     BYTE parseMultipartAlternativeBody(const char *raw, const char *boundary,
-                                       std::vector<Types::MimeBodySection> &target)
-    {
+                                       std::vector<Types::MimeBodySection> &target) {
         char *rawC = nullptr, *tok = nullptr, *boundaryNewSection = nullptr, *boundaryEnd = nullptr,
-            *sectionBuffer = nullptr, *bodyRet = nullptr, *headerRet = nullptr;
-        size_t tempSize, sectionBufferSize;
+                *sectionBuffer = nullptr, *bodyRet = nullptr, *headerRet = nullptr, *tempFormattingBuf = nullptr;
+        size_t tempSize, sectionBufferSize, tempFormattingBufSize;
+        std::vector<char *> tempSections{};
         std::vector<Types::MimeHeader> tempHeaders{};
-        bool isEnd;
+        Types::MimeContentTransferEncoding tempTransferEncoding;
+        Types::MimeContentType tempContentType;
+        bool isEnd, newSection;
         BYTE rc = 0;
 
         // ----
@@ -815,8 +778,6 @@ namespace Fannst::FSMTPServer::MIMEParser
         strcat(&boundaryEnd[0], "--");
         strcat(&boundaryEnd[0], &boundary[0]);
         strcat(&boundaryEnd[0], "--");
-
-        std::cout << boundaryNewSection << std::endl;
 
         // ----
         // Creates an copy of the raw data
@@ -844,8 +805,8 @@ namespace Fannst::FSMTPServer::MIMEParser
 
         // Starts looping
         isEnd = false;
-        while (tok != nullptr)
-        {
+        newSection = false;
+        while (tok != nullptr) {
             // Gets the length of the token
             tempSize = strlen(&tok[0]);
 
@@ -856,39 +817,25 @@ namespace Fannst::FSMTPServer::MIMEParser
             // Checks if there is an '\n' in the begin, if so remove it
             if (tok[0] == '\n') memmove(&tok[0], &tok[1], tempSize);
 
-            std::cout << tok << std::endl;
-
             // ----
             // Checks if it is an boundary, if so... The new section or end
             // ----
 
-            if (tok[0] == '-')
-            {
+            if (tok[0] == '-' && tok[1] == '-') {
                 // Checks if it is the end
                 isEnd = (strcmp(&tok[0], &boundaryEnd[0]) == 0);
+                newSection = (strcmp(&tok[0], &boundaryNewSection[0]) == 0);
 
                 // Checks if it is an new section boundary, else if it is an end boundary
-                if (strcmp(&tok[0], &boundaryNewSection[0]) == 0 || isEnd)
-                { // An new section starts
+                if (newSection || isEnd) { // An new section starts
 
                     // ----
                     // Processes the result, if not zero.. Else it will do nothing
                     // ----
 
-                    if (sectionBuffer != nullptr)
-                    {
-                        // ----
-                        // Splits the section body and headers
-                        // ----
-
-                        // Separates the headers and body
-                        separateHeadersAndBody(sectionBuffer, &headerRet, &bodyRet);
-
-                        // Parses the headers, and stores them
-                        parseHeaders(headerRet, tempHeaders);
-
-                        // Gets the content type from the headers, and transfer encoding ... We need both of them \
-                        to determine if we need any further parsing, for example 7 bit decoding
+                    if (sectionBuffer != nullptr) {
+                        // Pushes the results to the buffer
+                        tempSections.emplace_back(sectionBuffer);
                     }
 
                     // ----
@@ -903,12 +850,7 @@ namespace Fannst::FSMTPServer::MIMEParser
 
                     // Sets the first char of the buffer to '\0' to allow future string operations
                     sectionBuffer[0] = '\0';
-                }
 
-                // If it is the end break loop, else just continue without appending the boundary
-                if (isEnd) break;
-                else
-                {
                     // Goes to the next token
                     tok = strtok(nullptr, "\r");
 
@@ -925,6 +867,11 @@ namespace Fannst::FSMTPServer::MIMEParser
 
             // Resizes the section buffer
             sectionBuffer = reinterpret_cast<char *>(realloc(&sectionBuffer[0], sectionBufferSize));
+            if (!sectionBuffer)
+            {
+                std::cerr << "Could not reallocate memory while parsing message body in file: " << __FILE__ <<
+                ", at line: " << __LINE__ << std::endl;
+            }
 
             // Appends the current token to the section buffer
             strcat(&sectionBuffer[0], &tok[0]);
@@ -941,6 +888,104 @@ namespace Fannst::FSMTPServer::MIMEParser
         }
 
         // ----
+        // processes the pieces
+        // ----
+
+        for (char *section : tempSections)
+        {
+            // ----
+            // Splits the section body and headers
+            // ----
+
+            // Separates the headers and body
+            separateHeadersAndBody(section, &headerRet, &bodyRet);
+
+            // Parses the headers, and stores them
+            parseHeaders(headerRet, tempHeaders);
+
+            // Gets the content type from the headers, and transfer encoding ... We need both of them \
+                            to determine if we need any further parsing, for example 7 bit decoding
+            for (const Types::MimeHeader &h : tempHeaders) {
+                // ----
+                // Prepares the copy
+                // ----
+
+                // Gets the size
+                tempFormattingBufSize = strlen(&h.h_Key[0]);
+
+                // Allocates memory for the lower case copy
+                tempFormattingBuf = reinterpret_cast<char *>(malloc(
+                        ALLOCATE_NULL_TERMINATION(tempFormattingBufSize)));
+
+                // Copies the string
+                memcpy(&tempFormattingBuf[0], &h.h_Key[0], tempFormattingBufSize + 1);
+
+                // ----
+                // Turns the string into lower case
+                // ----
+
+                // Converts the string to lower case
+                for (char *p = &tempFormattingBuf[0]; *p != '\0'; p++)
+                    *p = static_cast<char>(tolower(*p));
+
+                // ----
+                // Checks if the parameter is useful to us
+                // ----
+
+                if (tempFormattingBuf[0] == 'c' &&
+                    strcmp(&tempFormattingBuf[0], "content-type") == 0) { // Is the "Content-Type"
+                    tempContentType = getContentType(h.h_Value);
+                } else if (tempFormattingBuf[0] == 'c'
+                           && strcmp(&tempFormattingBuf[0], "content-transfer-encoding") ==
+                              0) { // Is the "Content-Transfer-Encoding"
+                    tempTransferEncoding = getTransferEncoding(h.h_Value);
+                }
+
+                // ----
+                // Checks if there are any invalid
+                // ----
+
+                if (tempContentType == Types::MimeContentType::INVALID ||
+                    tempTransferEncoding == Types::MimeContentTransferEncoding::MCT_INVALID) {
+                    // TODO: Handle error
+                }
+
+                // ----
+                // Frees the memory
+                // ----
+
+                free(tempFormattingBuf);
+            }
+
+            // ----
+            // Checks if the body itself needs further processing, for example hex decoding for certain
+            // values
+            // ----
+
+            // TODO: Create further processing for decoding
+
+            // ----
+            // Pushes the result
+            // ----
+
+            target.emplace_back(Types::MimeBodySection{
+                    static_cast<int>(target.size()),
+                    bodyRet,
+                    tempHeaders,
+                    tempContentType
+            });
+
+            // ----
+            // Frees the memory
+            // ----
+
+            free(headerRet);
+            free(section);
+
+            tempHeaders.clear();
+        }
+
+        // ----
         // Frees the memory
         // ----
 
@@ -949,5 +994,30 @@ namespace Fannst::FSMTPServer::MIMEParser
         free(boundaryEnd);
 
         return rc;
+    }
+
+    /**
+     * Gets the transfer encoding from string
+     * @param raw
+     * @return
+     */
+    Types::MimeContentTransferEncoding  getTransferEncoding(const char *raw)
+    {
+        if (raw[0] == 'b' && strcmp(&raw[0], "base64") == 0)
+        { // is base64
+            return Types::MimeContentTransferEncoding::MCT_BASE64;
+        } else if (raw[0] == 'q' && strcmp(&raw[0], "quoted-printable") == 0)
+        { // is quoted printable
+            return Types::MimeContentTransferEncoding::MCT_QUOTED_PRINTABLE;
+        } else if (raw[0] == '7' && strcmp(&raw[0], "7bit") == 0)
+        { // is 7bit
+            return Types::MimeContentTransferEncoding::MCT_7_BIT;
+        } else if (raw[0] == 'b' && strcmp(&raw[0], "binary") == 0)
+        { // Is binary
+            return Types::MimeContentTransferEncoding::MCT_BINARY;
+        } else if (raw[0] == '8' && strcmp(&raw[0], "8bit") == 0)
+        { // Is 8bit
+            return Types::MimeContentTransferEncoding::MCT_8_BIT;
+        } else return Types::MimeContentTransferEncoding::MCT_INVALID;
     }
 }

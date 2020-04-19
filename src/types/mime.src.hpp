@@ -22,6 +22,16 @@ namespace Fannst::FSMTPServer::Types
         MULTIPART_MIXED
     } MimeContentType;
 
+    typedef enum
+    {
+        MCT_INVALID = 0,
+        MCT_QUOTED_PRINTABLE,
+        MCT_7_BIT,
+        MCT_8_BIT,
+        MCT_BASE64,
+        MCT_BINARY
+    } MimeContentTransferEncoding;
+
     typedef struct
     {
         const char *h_Key;

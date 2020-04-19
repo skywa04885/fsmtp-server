@@ -52,3 +52,14 @@
 // ----
 
 #define CRLF "\r\n"
+
+// ----
+// Assertions
+// ----
+
+#define ASSERT_REALLOC(a, b) if (a == nullptr) { \
+        std::cerr << "Could not resize buffer at position: " << __LINE__ << ", in file: " << __FILE__ << std::endl; \
+    } else                                                                                                          \
+    {                                                                                                               \
+        b = &a[0];                                                                                                  \
+    }

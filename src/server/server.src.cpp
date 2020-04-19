@@ -527,6 +527,47 @@ namespace Fannst::FSMTPServer::Server
                             case Types::MimeContentType::MULTIPART_ALTERNATIVE:
                             {
                                 MIMEParser::parseMultipartAlternativeBody(&body[0], result.m_Boundary, result.m_Content);
+                                break;
+                            }
+                            case Types::TEXT_HTML:
+                            {
+                                // TODO: Clean up the strlen stuff
+
+                                // Allocates memory for the copy
+                                char *copy = reinterpret_cast<char *>(malloc(
+                                        ALLOCATE_NULL_TERMINATION(strlen(&body[0]))));
+
+                                // Copies data
+                                memcpy(&copy[0], &body[0], strlen(&body[0]));
+
+                                // Inserts the body section
+                                result.m_Content.emplace_back(Types::MimeBodySection{
+                                    0,
+                                    copy,
+                                    {},
+                                    Types::MimeContentType::TEXT_HTML
+                                });
+                                break;
+                            }
+                            case Types::TEXT_PLAIN:
+                            {
+                                // TODO: Clean up the strlen stuff
+
+                                // Allocates memory for the copy
+                                char *copy = reinterpret_cast<char *>(malloc(
+                                        ALLOCATE_NULL_TERMINATION(strlen(&body[0]))));
+
+                                // Copies data
+                                memcpy(&copy[0], &body[0], strlen(&body[0]));
+
+                                // Inserts the body section
+                                result.m_Content.emplace_back(Types::MimeBodySection{
+                                        0,
+                                        copy,
+                                        {},
+                                        Types::MimeContentType::TEXT_PLAIN
+                                });
+                                break;
                             }
                         }
 
@@ -563,7 +604,7 @@ namespace Fannst::FSMTPServer::Server
 
                     // Saves the email
                     std::cout << result << std::endl;
-//                    result.save(connection.c_Session);
+                    result.save(connection.c_Session);
 
                     continue;
                 }

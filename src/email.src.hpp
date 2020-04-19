@@ -96,6 +96,19 @@ namespace Fannst::FSMTPServer::Models
                 free(const_cast<char *>(a.e_Address));
                 free(const_cast<char *>(a.e_Name));
             }
+
+            // Frees the content sections
+            for (auto &s : this->m_Content)
+            {
+                free(const_cast<char *>(s.s_Content));
+
+                // Frees the content headers
+                for (auto &h : s.s_FullHeaders)
+                {
+                    free(const_cast<char *>(h.h_Value));
+                    free(const_cast<char *>(h.h_Key));
+                }
+            }
         }
     };
 };

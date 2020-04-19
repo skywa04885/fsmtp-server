@@ -103,4 +103,11 @@ namespace Fannst::FSMTPServer::MIMEParser
      */
     BYTE parseMultipartAlternativeBody(const char *raw, const char *boundary,
             std::vector<Types::MimeBodySection> &target);
+
+    /**
+     * Gets the transfer encoding from string
+     * @param raw
+     * @return
+     */
+    Types::MimeContentTransferEncoding  getTransferEncoding(const char *raw);
 }
