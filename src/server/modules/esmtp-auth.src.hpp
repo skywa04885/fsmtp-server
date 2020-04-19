@@ -15,6 +15,7 @@
 #include "../server.src.hpp"
 #include "../responses.src.hpp"
 #include "../../user.src.hpp"
+#include "../../pre.hpp"
 
 namespace Fannst::FSMTPServer::ESMTPModules
 {

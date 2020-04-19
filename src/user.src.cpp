@@ -105,7 +105,8 @@ namespace Fannst::FSMTPServer::Models
         target.u_Domain = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(strlen(&domain[0]), 0)));
         memcpy(&const_cast<char *>(target.u_Domain)[0], &domain[0], strlen(&domain[0]) + 1);
 
-        target.u_Password = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(resPasswordLen, 0)));
+        target.u_Password = reinterpret_cast<char *>(malloc(ALLOCATE_NULL_TERMINATION(resPasswordLen)));
+        memset(&const_cast<char *>(target.u_Password)[resPasswordLen], '\0', 1);
         memcpy(&const_cast<char *>(target.u_Password)[0], &res_password[0], resPasswordLen);
 
         target.u_Username = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(strlen(&username[0]), 0)));

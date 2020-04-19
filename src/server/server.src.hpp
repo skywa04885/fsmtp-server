@@ -44,7 +44,6 @@ namespace Fannst::FSMTPServer::Server
         PHASE_PT_DATA_END
     } ConnPhasePT;
 
-
     /**
      * Runs an server instance
      * @param port

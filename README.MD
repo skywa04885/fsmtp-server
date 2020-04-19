@@ -21,7 +21,7 @@ R: 250-smtp.fannst.nl at your service, [127.0.0.1]
    250-HELP
    250 AUTH DIGEST-MD5
 S: STARTTLS
-R: 220 Ok: continue
+R: 220 Ok: continue - fsmtp
 
 --- TLS Connecting ---
 
@@ -32,13 +32,13 @@ R: 250-smtp.fannst.nl at your service, [127.0.0.1]
    250 AUTH DIGEST-MD5 PLAIN LOGIN
 
 S: MAIL FROM: <luke.rieff@gmail.com>
-R: 250 Ok: proceed
+R: 250 Ok: proceed - fsmtp
 
 S: RCPT TO: <luke@fannst.nl>
-R: 250 ok: proceed
+R: 250 ok: proceed - fsmtp
 
 S: DATA
-R: 354 End data with <CR><LF>.<CR><LF>
+R: 354 End data with <CR><LF>.<CR><LF> - fsmtp
 
 S: From: Luke A.C.A. Rieff <luke.rieff@gmail.com>
    To: Luke Rieff <luke@fannst.nl>
@@ -51,9 +51,9 @@ S: From: Luke A.C.A. Rieff <luke.rieff@gmail.com>
 
    .
 
-R: 250 Ok: queued as 0
+R: 250 Ok: queued as 0 - fsmtp
 S: QUIT
-R: 221 Goodbye !
+R: 221 Goodbye ! - fsmtp
 
 --- Server terminates connection ---
 ```
@@ -96,3 +96,10 @@ sudo bash ./build.sh
 |Name          |Github                                         |Website                                  |
 |--------------|-----------------------------------------------|-----------------------------------------|
 |Luke Rieff    |[skywa04885](https://github.com/skywa04885)    |[me.fannst.nl](https://me.fannst.nl)     |
+
+Want to become an developer for Fannst Software ? 
+Feel free to contact us for more information, keep in mind that you will be doing
+this as a volunteer, and will not get payed. Click [Here](https://software.fannst.nl) to get in touch.
+
+---
+

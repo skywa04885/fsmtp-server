@@ -392,6 +392,8 @@ namespace Fannst::FSMTPServer::ESMTPModules
                 char *hRet = nullptr;
                 OpenSSL::sha256base64(&password[0], &hRet);
 
+                std::cout << &(*userQuickAccess)->u_Password[0] << std::endl;
+
                 // Compares it against the password in the database
                 if (strcmp(&hRet[0], &(*userQuickAccess)->u_Password[0]) != 0)
                 {

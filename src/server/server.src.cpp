@@ -262,8 +262,6 @@ namespace Fannst::FSMTPServer::Server
         Models::Email result;       // The result email
         Models::UserQuickAccess *userQuickAccess = nullptr;
 
-        bool err = false;
-
         // ----
         // The OpenSSL Connection variables
         // ----
@@ -329,6 +327,30 @@ namespace Fannst::FSMTPServer::Server
                     // Sets the status
                     connPhasePt = ConnPhasePT::PHASE_PT_DATA_END;
 
+                    // ----
+                    // Checks if there needs to be relaying, and if relaying is allowed
+                    // ----
+
+                    char *username;
+                    char *domain;
+
+                    // Gets the username from the transport from address
+                    MIMEParser::splitAddress(&result.m_TransportFrom.e_Address[0], &username, &domain);
+
+                    // Performs the check
+                    if (strcmp(&domain[0], GE_DOMAIN) == 0 && strcmp(&username[0], &userQuickAccess->u_Username[0]) != 0)
+                    {
+                        // Sends the message
+                        char *msg = ServerCommand::gen(551, "Error: You cannot send from another "
+                                                            "username except your own one", nullptr, 0);
+                        Responses::write(&sock_fd, ssl, msg, strlen(msg));
+                        free(msg);
+                    }
+
+                    // ----
+                    // Sends the initial message
+                    // ----
+
                     // Sends the message
                     char *msg = ServerCommand::gen(250, "Ok: queued as 0", nullptr, 0);
                     Responses::write(&sock_fd, ssl, msg, strlen(msg));
@@ -362,7 +384,7 @@ namespace Fannst::FSMTPServer::Server
                     cass_uuid_gen_free(uuidGen);
 
                     // ----
-                    // Checks if the email needs to be relayed
+                    // Checks if the email needs to be relayed, if not.. Just store it in the database
                     // ----
 
                     result.save(connection.c_Session);
@@ -385,7 +407,7 @@ namespace Fannst::FSMTPServer::Server
                 case ServerCommand::SMTPServerCommand::HELLO: {
                     if (!ESMTPModules::Default::handleHello(&sock_fd, ssl, currentCommandArgs, connPhasePt, sockaddrIn))
                     {
-                        err = true;
+                        // Goes to the end
                         goto end;
                     }
                     break;
@@ -393,7 +415,7 @@ namespace Fannst::FSMTPServer::Server
                 case ServerCommand::SMTPServerCommand::MAIL_FROM: {
                     if (!ESMTPModules::Default::handleMailFrom(&sock_fd, ssl, currentCommandArgs, result, connPhasePt, userQuickAccess))
                     {
-                        err = true;
+                        // Goes to the end
                         goto end;
                     }
                     break;
@@ -401,7 +423,7 @@ namespace Fannst::FSMTPServer::Server
                 case ServerCommand::SMTPServerCommand::RCPT_TO: {
                     if (!ESMTPModules::Default::handleRcptTo(&sock_fd, ssl, currentCommandArgs, result, connPhasePt, connection.c_Session, userQuickAccess))
                     {
-                        err = true;
+                        // Goes to the end
                         goto end;
                     }
                     break;
@@ -426,7 +448,7 @@ namespace Fannst::FSMTPServer::Server
                         PREP_ERROR("SSL Error", "Could not create context ..")
                         ERR_print_errors_fp(stderr);
 
-                        err = true;
+                        // Goes to the end
                         goto end;
                     }
 
@@ -436,7 +458,7 @@ namespace Fannst::FSMTPServer::Server
                         PREP_ERROR("SSL Error", "Could not configure context ..")
                         ERR_print_errors_fp(stderr);
 
-                        err = true;
+                        // Goes to the end
                         goto end;
                     }
 
@@ -489,6 +511,8 @@ namespace Fannst::FSMTPServer::Server
                 }
                 case ServerCommand::SMTPServerCommand::QUIT: {
                     ESMTPModules::Default::handleQuit(&sock_fd, ssl);
+
+                    // Goes to the end
                     goto end;
                 }
                 case ServerCommand::SMTPServerCommand::HELP: {
@@ -498,14 +522,15 @@ namespace Fannst::FSMTPServer::Server
                 case ServerCommand::SMTPServerCommand::AUTH: {
                     if (!ESMTPModules::Auth::handleAuth(&sock_fd, ssl, currentCommandArgs, connection.c_Session, &userQuickAccess))
                     {
-                        err = true;
+                        // Goes to the end
                         goto end;
                     }
                     break;
                 }
                 default: {
                     Responses::syntaxError(&sock_fd, ssl);
-                    err = true;
+
+                    // Goes to the end
                     goto end;
                 }
             }
