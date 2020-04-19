@@ -189,6 +189,8 @@ namespace Fannst::FSMTPServer::Server
      */
     void connectionThread(struct sockaddr_in *sockaddrIn, int sock_fd)
     {
+        Timer t("connectionThread");
+
         _usedThreads++;             // Reserves one thread, in global atomic
 
         // ----
