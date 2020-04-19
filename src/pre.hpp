@@ -39,6 +39,7 @@
 
 // Adds one byte to otherwise invalid memory for string
 #define ALLOC_CAS_STRING(a, b) a + b + 1
+#define ALLOCATE_NULL_TERMINATION(a) a + 1
 
 // ----
 // Simple type defintions

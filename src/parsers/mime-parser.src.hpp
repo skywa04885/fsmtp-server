@@ -93,4 +93,14 @@ namespace Fannst::FSMTPServer::MIMEParser
      * @return
      */
     BYTE parseAddressList(const char *raw, std::vector<Types::EmailAddress> &ret);
+
+    /**
+     * Parses an multipart/alternative body
+     * @param raw
+     * @param boundary
+     * @param target
+     * @return
+     */
+    BYTE parseMultipartAlternativeBody(const char *raw, const char *boundary,
+            std::vector<Types::MimeBodySection> &target);
 }

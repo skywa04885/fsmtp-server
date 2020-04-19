@@ -59,7 +59,7 @@ namespace Fannst::FSMTPServer::Models
         std::vector<Types::EmailAddress> m_From;
         std::vector<Types::EmailAddress> m_To;
         std::vector<Types::MimeHeader> m_FullHeaders;
-        std::vector<EmailContentSection> m_Content;
+        std::vector<Types::MimeBodySection> m_Content;
         // Methods
         int save(CassSession *session);
         static long getCurrentBucket();
@@ -200,13 +200,13 @@ inline std::ostream &operator << (std::ostream &out, Fannst::FSMTPServer::Models
     {
         // Appends to the stream
         out << '\t' << i << ". \033[34m[Content Section]\033[0m:" << std::endl;
-        out << '\t' << "  - \033[34m[Section Type]\033[0m: \033[33m" << section.e_Type << "\033[0m" << std::endl;
-        out << '\t' << "  - \033[34m[Section Index]\033[0m: \033[33m" << section.e_Index << "\033[0m" << std::endl;
-        out << '\t' << "  - \033[34m[Section Value]\033[0m: \033[33m" << section.e_Content << "\033[0m" << std::endl;
+        out << '\t' << "  - \033[34m[Section Type]\033[0m: \033[33m" << section.s_ContentType << "\033[0m" << std::endl;
+        out << '\t' << "  - \033[34m[Section Index]\033[0m: \033[33m" << section.s_Index << "\033[0m" << std::endl;
+        out << '\t' << "  - \033[34m[Section Value]\033[0m: \033[33m" << section.s_Content << "\033[0m" << std::endl;
         out << '\t' << "  - \033[34m[Section Headers]\033[0m: \033[0m" << std::endl;
         // Loops over the headers
         std::size_t j = 0;
-        for (auto& header : section.e_FullHeaders)
+        for (auto& header : section.s_FullHeaders)
         {
             // Prints the current header
             std::cout << "\t\t " << j << ". \033[33m" << header << "\033[0m" << std::endl;

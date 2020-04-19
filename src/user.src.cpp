@@ -89,13 +89,13 @@ namespace Fannst::FSMTPServer::Models
         const CassRow *row = cass_iterator_get_row(iterator);
 
         // The result variables
-        size_t res_len;
+        size_t resPasswordLen;
         CassUuid res_uuid;
         cass_int64_t res_bucket;
         const char *res_password;
 
         // Receives the data from database
-        cass_value_get_string(cass_row_get_column_by_name(row, "u_password"), &res_password, &res_len);
+        cass_value_get_string(cass_row_get_column_by_name(row, "u_password"), &res_password, &resPasswordLen);
         cass_value_get_int64(cass_row_get_column_by_name(row, "u_bucket"), &res_bucket);
         cass_value_get_uuid(cass_row_get_column_by_name(row, "u_uuid"), &res_uuid);
 
@@ -104,8 +104,10 @@ namespace Fannst::FSMTPServer::Models
 
         target.u_Domain = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(strlen(&domain[0]), 0)));
         memcpy(&const_cast<char *>(target.u_Domain)[0], &domain[0], strlen(&domain[0]) + 1);
-        target.u_Password = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(strlen(&res_password[0]), 0)));
-        memcpy(&const_cast<char *>(target.u_Password)[0], &res_password[0], strlen(&res_password[0]) + 1);
+
+        target.u_Password = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(resPasswordLen, 0)));
+        memcpy(&const_cast<char *>(target.u_Password)[0], &res_password[0], resPasswordLen);
+
         target.u_Username = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(strlen(&username[0]), 0)));
         memcpy(&const_cast<char *>(target.u_Username)[0], &username[0], strlen(&username[0]) + 1);
 

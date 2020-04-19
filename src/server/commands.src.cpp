@@ -140,7 +140,7 @@ namespace Fannst::FSMTPServer::ServerCommand
             args[size2copy - 3] = '\0';
 
             // Resize the buffer
-            size2copy -= 3;
+            size2copy -= 2;
             args = reinterpret_cast<char *>(realloc(&args[0], size2copy));
 
             // ----

@@ -150,10 +150,10 @@ namespace Fannst::FSMTPServer::Models
             CassUserType *m_content_section_temp = cass_user_type_new_from_data_type(udt_email_content_section);
 
             // Creates the section headers
-            CassCollection *m_content_section_headers_temp = cass_collection_new(CASS_COLLECTION_TYPE_LIST, section.e_FullHeaders.size());
+            CassCollection *m_content_section_headers_temp = cass_collection_new(CASS_COLLECTION_TYPE_LIST, section.s_FullHeaders.size());
 
             // Loops over the section headers
-            for (const auto &header : section.e_FullHeaders)
+            for (const auto &header : section.s_FullHeaders)
             {
                 // Creates the header temp
                 CassUserType *m_content_section_header_temp = cass_user_type_new_from_data_type(udt_email_header);
@@ -171,9 +171,9 @@ namespace Fannst::FSMTPServer::Models
 
             // Sets the variables
             cass_user_type_set_collection_by_name(m_content_section_temp, "e_full_headers", m_content_section_headers_temp);
-            cass_user_type_set_string_by_name(m_content_section_temp, "e_content", section.e_Content.c_str());
-            cass_user_type_set_int32_by_name(m_content_section_temp, "e_index", section.e_Index);
-            cass_user_type_set_int32_by_name(m_content_section_temp, "e_type", section.e_Type);
+            cass_user_type_set_string_by_name(m_content_section_temp, "e_content", section.s_Content);
+            cass_user_type_set_int32_by_name(m_content_section_temp, "e_index", section.s_Index);
+            cass_user_type_set_int32_by_name(m_content_section_temp, "e_type", section.s_ContentType);
 
             // Appends to the result collection
             cass_collection_append_user_type(m_content, m_content_section_temp);

@@ -518,11 +518,26 @@ namespace Fannst::FSMTPServer::Server
                         }
 
                         // ----
+                        // Parses the message body with the required algorithm
+                        // ----
+
+                        switch (result.m_ContentType)
+                        {
+                            // Parsing "multipart/alternative" using boundary
+                            case Types::MimeContentType::MULTIPART_ALTERNATIVE:
+                            {
+                                MIMEParser::parseMultipartAlternativeBody(&body[0], result.m_Boundary, result.m_Content);
+                            }
+                        }
+
+                        // ----
                         // Frees the memory
                         // ----
 
                         free(klw);
                         free(cmpT);
+                        free(headers);
+                        free(body);
                     }
 
                     // ----

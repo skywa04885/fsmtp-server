@@ -140,7 +140,7 @@ namespace Fannst::FSMTPServer::MIMEParser
                 for (char *p = &tok[0]; *p != '\0' && (*p == '\t' || *p == ' '); p++) j++;
 
                 // Removes the indentation
-                memmove(&tok[0], &tok[j], strlen(&tok[0]) - j - 1);
+                memmove(&tok[0], &tok[j], strlen(&tok[0]) - j + 1);
 
                 // Sets the contains indentation to true
                 containsIndention = true;
@@ -155,7 +155,7 @@ namespace Fannst::FSMTPServer::MIMEParser
 
                 // Allocates the new size in the headers buffer
                 headRetBuffSize += strlen(&tok[0]) + 2;
-                *headRet = reinterpret_cast<char *>(realloc(&(*headRet)[0], headRetBuffSize));
+                *headRet = reinterpret_cast<char *>(realloc(*headRet, headRetBuffSize));
 
                 // Appends the current token and the <CR><LF>
                 if (!containsIndention) strcat(&(*headRet)[0], CRLF);
@@ -165,7 +165,7 @@ namespace Fannst::FSMTPServer::MIMEParser
 
                 // Allocates the new size in the body buffer
                 bodyRetBuffSize += strlen(&tok[0]) + 2;
-                *bodyRet = reinterpret_cast<char *>(realloc(&(*bodyRet)[0], bodyRetBuffSize));
+                *bodyRet = reinterpret_cast<char *>(realloc(*bodyRet, bodyRetBuffSize));
 
                 // Appends the current token and the <CR><LF>
                 if (!containsIndention) strcat(&(*bodyRet)[0], CRLF);
@@ -183,10 +183,10 @@ namespace Fannst::FSMTPServer::MIMEParser
         // ----
 
         if ((*bodyRet)[0] == '\r' && (*bodyRet)[1] == '\n')
-            memmove(&(*bodyRet)[0], &(*bodyRet)[2], strlen(&(*bodyRet)[0]) - 2);
+            memmove(&(*bodyRet)[0], &(*bodyRet)[2], strlen(&(*bodyRet)[0]) - 1);
 
         if ((*headRet)[0] == '\r' && (*headRet)[1] == '\n')
-            memmove(&(*headRet)[0], &(*headRet)[2], strlen(&(*headRet)[0]) - 2);
+            memmove(&(*headRet)[0], &(*headRet)[2], strlen(&(*headRet)[0]) - 1);
 
         // ----
         // Frees the memory
@@ -575,7 +575,7 @@ namespace Fannst::FSMTPServer::MIMEParser
             // If whitespace at begin or end, remove it
             if ((*name)[0] == ' ') memmove(&(*name)[0], &(*name)[1], strlen(&(*name)[0]));
             size = strlen(&(*name)[0]);
-            if((*name)[size-1] == ' ') memmove(&(*name)[size-1], &(*name)[size], size);
+            if((*name)[size] == ' ') (*name)[size] = '\0';
         }
 
         // ----
@@ -772,6 +772,181 @@ namespace Fannst::FSMTPServer::MIMEParser
         // ----
 
         free(rawC);
+
+        return rc;
+    }
+
+    /**
+     * Parses an multipart/alternative body
+     * @param raw
+     * @param boundary
+     * @param target
+     * @return
+     */
+    BYTE parseMultipartAlternativeBody(const char *raw, const char *boundary,
+                                       std::vector<Types::MimeBodySection> &target)
+    {
+        char *rawC = nullptr, *tok = nullptr, *boundaryNewSection = nullptr, *boundaryEnd = nullptr,
+            *sectionBuffer = nullptr, *bodyRet = nullptr, *headerRet = nullptr;
+        size_t tempSize, sectionBufferSize;
+        std::vector<Types::MimeHeader> tempHeaders{};
+        bool isEnd;
+        BYTE rc = 0;
+
+        // ----
+        // Prepares the boundary's
+        // ----
+
+        // Gets the length of the boundary
+        tempSize = strlen(&boundary[0]);
+
+        // Allocates the required memory
+        boundaryNewSection = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(tempSize, 2)));
+        boundaryEnd = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(tempSize, 4)));
+
+        // Adds the null termination chars
+        boundaryNewSection[0] = '\0';
+        boundaryEnd[0] = '\0';
+
+        // Creates the strings
+        strcat(&boundaryNewSection[0], "--");
+        strcat(&boundaryNewSection[0], &boundary[0]);
+
+        strcat(&boundaryEnd[0], "--");
+        strcat(&boundaryEnd[0], &boundary[0]);
+        strcat(&boundaryEnd[0], "--");
+
+        std::cout << boundaryNewSection << std::endl;
+
+        // ----
+        // Creates an copy of the raw data
+        // ----
+
+        // Gets the size of the raw string
+        tempSize = strlen(&raw[0]);
+
+        // Allocates memory for the copy
+        rawC = reinterpret_cast<char *>(malloc(ALLOCATE_NULL_TERMINATION(tempSize)));
+
+        // Copies the memory
+        memcpy(&rawC[0], &raw[0], tempSize + 1);
+
+        // ----
+        // Prepares the tokenizer
+        // ----
+
+        // Creates the tokenizer
+        tok = strtok(&rawC[0], "\r");
+
+        // ----
+        // Starts looping
+        // ----
+
+        // Starts looping
+        isEnd = false;
+        while (tok != nullptr)
+        {
+            // Gets the length of the token
+            tempSize = strlen(&tok[0]);
+
+            // ----
+            // Prepares the token
+            // ----
+
+            // Checks if there is an '\n' in the begin, if so remove it
+            if (tok[0] == '\n') memmove(&tok[0], &tok[1], tempSize);
+
+            std::cout << tok << std::endl;
+
+            // ----
+            // Checks if it is an boundary, if so... The new section or end
+            // ----
+
+            if (tok[0] == '-')
+            {
+                // Checks if it is the end
+                isEnd = (strcmp(&tok[0], &boundaryEnd[0]) == 0);
+
+                // Checks if it is an new section boundary, else if it is an end boundary
+                if (strcmp(&tok[0], &boundaryNewSection[0]) == 0 || isEnd)
+                { // An new section starts
+
+                    // ----
+                    // Processes the result, if not zero.. Else it will do nothing
+                    // ----
+
+                    if (sectionBuffer != nullptr)
+                    {
+                        // ----
+                        // Splits the section body and headers
+                        // ----
+
+                        // Separates the headers and body
+                        separateHeadersAndBody(sectionBuffer, &headerRet, &bodyRet);
+
+                        // Parses the headers, and stores them
+                        parseHeaders(headerRet, tempHeaders);
+
+                        // Gets the content type from the headers, and transfer encoding ... We need both of them \
+                        to determine if we need any further parsing, for example 7 bit decoding
+                    }
+
+                    // ----
+                    // Generates the new section buffer
+                    // ----
+
+                    // Allocates 1 byte of buffer
+                    sectionBuffer = reinterpret_cast<char *>(malloc(1));
+
+                    // Sets the buffer size to 1
+                    sectionBufferSize = 1;
+
+                    // Sets the first char of the buffer to '\0' to allow future string operations
+                    sectionBuffer[0] = '\0';
+                }
+
+                // If it is the end break loop, else just continue without appending the boundary
+                if (isEnd) break;
+                else
+                {
+                    // Goes to the next token
+                    tok = strtok(nullptr, "\r");
+
+                    continue;
+                }
+            }
+
+            // ----
+            // Appends the current string to the section buffer
+            // ----
+
+            // Adds the length of the current token to the section buffer size
+            sectionBufferSize += strlen(&tok[0]) + 2;
+
+            // Resizes the section buffer
+            sectionBuffer = reinterpret_cast<char *>(realloc(&sectionBuffer[0], sectionBufferSize));
+
+            // Appends the current token to the section buffer
+            strcat(&sectionBuffer[0], &tok[0]);
+
+            // Appends the <CR><LF>
+            strcat(&sectionBuffer[0], CRLF);
+
+            // ----
+            // Finishes
+            // ----
+
+            // Goes to the next token
+            tok = strtok(nullptr, "\r");
+        }
+
+        // ----
+        // Frees the memory
+        // ----
+
+        free(rawC);
+        free(boundaryNewSection);
+        free(boundaryEnd);
 
         return rc;
     }

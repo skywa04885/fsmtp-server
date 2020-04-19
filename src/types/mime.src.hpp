@@ -30,10 +30,11 @@ namespace Fannst::FSMTPServer::Types
 
     typedef struct
     {
-        BYTE s_Index;
+        int s_Index;
         char *s_Content;
         std::vector<MimeHeader> s_FullHeaders;
-    } MimeMultipartBodySection;
+        MimeContentType s_ContentType;
+    } MimeBodySection;
 
     typedef struct
     {
