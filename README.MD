@@ -87,12 +87,8 @@ R: 221 Goodbye !
 ## How to build ?
 
 ```bash
-mkdir build
-cd build
-
-cmake ..
-make -j [CPUS]
-sudo ./fsmtp_server
+sudo chmod +x ./build.sh
+sudo bash ./build.sh
 ```
 
 ## Developers

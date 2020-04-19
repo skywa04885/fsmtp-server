@@ -25,34 +25,38 @@
 #include "../logger.src.hpp"
 #include "commands.src.hpp"
 #include "../email.src.hpp"
-#include "../parsers/mime-parser.src.hpp"
 #include "../user.src.hpp"
 #include "../pre.hpp"
 #include "../ossl/ossl.src.hpp"
-#include "../debug/timer.src.hpp"
+#include "parse-message.src.hpp"
 
 #define MAX_THREADS 6
 
 namespace Fannst::FSMTPServer::Server
 {
-    typedef struct {
-        int *clientSocket;
-        struct sockaddr_in *client;
-    } ConnectionThreadParams;
-
-    typedef enum {
+    typedef enum
+    {
         PHASE_PT_INITIAL,
         PHASE_PT_HELLO,
         PHASE_PT_MAIL_FROM,
         PHASE_PT_MAIL_TO,
         PHASE_PT_DATA,
-        PHASE_PT_DATA_END,
-        PHASE_PT_QUIT
+        PHASE_PT_DATA_END
     } ConnPhasePT;
 
 
+    /**
+     * Runs an server instance
+     * @param port
+     * @return
+     */
     int run(const unsigned int& port, int *argc, char ***argv);
 
+    /**
+     * The method which handles one client
+     * @param sockaddrIn
+     * @param sock_fd
+     */
     void connectionThread(struct sockaddr_in *sockaddrIn, int sock_fd);
 
     /**

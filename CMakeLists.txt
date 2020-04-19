@@ -30,6 +30,10 @@ ADD_LIBRARY(
         src/server/server.src.hpp
         src/server/server.src.cpp
 
+        # The server message parser
+        src/server/parse-message.src.cpp
+        src/server/parse-message.src.hpp
+
         # The server commands
         src/server/commands.src.cpp
         src/server/commands.src.hpp
@@ -54,6 +58,9 @@ ADD_LIBRARY(
 
         src/queued-email.src.cpp
         src/queued-email.src.hpp
+
+        src/inbox-emails-quick-access.src.cpp
+        src/inbox-emails-quick-access.src.hpp
 
         # The user
         src/user.src.cpp

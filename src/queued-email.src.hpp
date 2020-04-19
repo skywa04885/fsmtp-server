@@ -5,9 +5,13 @@
  * Copyright: Free to use, without modifying
  */
 
-#pragma  once
+#pragma once
+
+#include <vector>
 
 #include <cassandra.h>
+
+#include "pre.hpp"
 
 namespace Fannst::FSMTPServer::Models
 {
@@ -26,9 +30,18 @@ namespace Fannst::FSMTPServer::Models
          * @param session
          * @return
          */
-        int save(CassSession *session);
+        BYTE save(CassSession *session);
+
+        /**
+         * Gets message to sent using the queue
+         * @param cassSession
+         * @param result
+         * @param count
+         * @return
+         */
+        static BYTE get(CassSession *cassSession, std::vector<QueuedEmail> &result, const int &count);
     private:
         long m_timestamp;
-        CassUuid  m_uuid;
+        CassUuid m_uuid;
     };
 }
