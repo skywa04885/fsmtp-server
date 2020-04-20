@@ -11,11 +11,12 @@
 
 #include "src/server/server.src.hpp"
 #include "src/ds-api/server.src.hpp"
+#include "src/sender/sender.src.hpp"
 #include "src/logger.src.hpp"
 
 int main(int argc, char **argv) {
     // Initializes the default values
-    bool enableWebApi, enableSMTPServer;
+    bool enableWebApi, enableSMTPServer, enableSender;
     enableWebApi = enableSMTPServer = false;
 
     // Creates the default logger
@@ -26,6 +27,8 @@ int main(int argc, char **argv) {
     print.setLevel(Fannst::FSMTPServer::Logger::Level::LOGGER_WARNING);
     print << "!! ALERT !! This application is highly under development, do not use for real world applications yet. "
         << Fannst::FSMTPServer::Logger::ConsoleOptions::ENDL;
+    print << "!! ALERT !! If you want to become an developer for Fannst Software, go to https://software.fannst.nl/contact "
+          << Fannst::FSMTPServer::Logger::ConsoleOptions::ENDL;
     print << "!! ALERT !! For any issues contact help@fannst.nl "
           << Fannst::FSMTPServer::Logger::ConsoleOptions::ENDL;
     print.setLevel(Fannst::FSMTPServer::Logger::Level::LOGGER_INFO);
@@ -34,7 +37,7 @@ int main(int argc, char **argv) {
     // Parses the command line arguments
     // ----
 
-    if (argc == 1) enableSMTPServer = true;
+    if (argc == 1) enableSMTPServer = enableSender = true;
     else
     {
         print << "Arguments found, started parsing ..." << Fannst::FSMTPServer::Logger::ConsoleOptions::ENDL;
@@ -43,7 +46,8 @@ int main(int argc, char **argv) {
         char *arg = nullptr;
         std::size_t size;
         std::size_t i, j;
-        char *t = reinterpret_cast<char *>(malloc(65)), *u = reinterpret_cast<char *>(malloc(65));
+        char *t = reinterpret_cast<char *>(malloc(65));
+
         for (i = 1; i < argc; i++)
         {
             // Gets the argument
@@ -72,47 +76,22 @@ int main(int argc, char **argv) {
                 }
 
                 // Checks if we have usage for the command
-                if (t[0] == 'e')
+                if (t[0] == 'e' && strcmp(&t[0], "enable"))
                 { // Starts with e
 
-                    // Copies the memory
-                    u[6] = '\0';
-                    memcpy(&u[0], &t[0], 6);
+                    // Creates the tokenizer
+                    char *tok = strtok(&t[7], ",");
 
-                    // Compares it
-                    if (strcmp(&u[0], "enable") == 0)
-                    { // Command is enable, parse args
+                    // Loops over the args
+                    while (tok != nullptr)
+                    {
+                        // Checks what the argument is
+                        if (tok[0] == 'w' && strcmp(&tok[0], "web") == 0) enableWebApi = true;
+                        else if (tok[0] == 's' && strcmp(&tok[0], "smtp") == 0) enableSMTPServer = true;
+                        else if (tok[0] == 's' && strcmp(&tok[0], "sender") == 0) enableSender = true;
 
-                        // Creates the tokenizer
-                        char *tok = strtok(&t[7], ",");
-
-                        // Loops over the args
-                        while (tok != nullptr)
-                        {
-                            // Checks what the argument is
-                            if (tok[0] == 'w')
-                            { // Starts with w
-
-                                // Copies the memory
-                                u[3] = '\0';
-                                memcpy(&u[0], &tok[0], 3);
-
-                                // Checks if it matches
-                                if (strcmp(&u[0], "web") == 0) enableWebApi = true;
-                            } else if (tok[0] == 's')
-                            { // Starts with w
-
-                                // Copies the memory
-                                u[4] = '\0';
-                                memcpy(&u[0], &tok[0], 4);
-
-                                // Checks if it matches
-                                if (strcmp(&u[0], "smtp") == 0) enableSMTPServer = true;
-                            }
-
-                            // Goes to the next token
-                            tok = strtok(nullptr, ",");
-                        }
+                        // Goes to the next token
+                        tok = strtok(nullptr, ",");
                     }
                 }
             } else
@@ -126,7 +105,6 @@ int main(int argc, char **argv) {
 
         // Free the memory
         free(t);
-        free(u);
     }
 
     // ----
@@ -140,6 +118,24 @@ int main(int argc, char **argv) {
 
         // Starts the web api
         Fannst::FSMTPServer::DS_API::run(80, &argc, &argv);
+    }
+
+    // ----
+    // Runs the email sender server
+    // ----
+
+    if (enableSender)
+    {
+        // Prints the update
+        print << "Sender starting ..." << Fannst::FSMTPServer::Logger::ConsoleOptions::ENDL;
+
+        // Creates the thread, if SMTP server enabled too
+        if (!enableSMTPServer) Fannst::FSMTPServer::Sender::run(&argc, &argv);
+        else
+        {
+            std::thread senderThread(Fannst::FSMTPServer::Sender::run, &argc, &argv);
+            senderThread.detach();
+        }
     }
 
     // ----

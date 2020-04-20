@@ -29,6 +29,7 @@
 #include "../pre.hpp"
 #include "../ossl/ossl.src.hpp"
 #include "parse-message.src.hpp"
+#include "../queued-email.src.hpp"
 
 #define MAX_THREADS 6
 

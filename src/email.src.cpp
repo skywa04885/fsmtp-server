@@ -234,6 +234,7 @@ namespace Fannst::FSMTPServer::Models
         cass_collection_free(m_content);
         cass_collection_free(m_full_headers);
         cass_statement_free(statement);
+        cass_schema_meta_free(schemaMeta);
 
         // Checks if it went fine
         if (cass_future_error_code(query_future) == CASS_OK)
@@ -242,7 +243,6 @@ namespace Fannst::FSMTPServer::Models
             // Frees the memory
             // ----
 
-            cass_schema_meta_free(schemaMeta);
             cass_future_free(query_future);
             return 0;
         } else

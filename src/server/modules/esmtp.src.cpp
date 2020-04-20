@@ -290,7 +290,7 @@ namespace Fannst::FSMTPServer::ESMTPModules
                 // Checks if relaying is allowed
                 // ----
 
-                if (!pUserQuickAccess)
+                if ((*pUserQuickAccess).u_Username == nullptr)
                 {
                     // Writes the error
                     char *msg = ServerCommand::gen(503,
@@ -308,7 +308,8 @@ namespace Fannst::FSMTPServer::ESMTPModules
                 // Sets the relaying to true
                 // ----
 
-                // TODO: Fix relaying
+                // Sends continue
+                Responses::preContextProceed(soc, ssl);
             } else
             {
                 // ----

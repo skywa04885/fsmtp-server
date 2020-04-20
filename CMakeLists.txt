@@ -68,6 +68,13 @@ ADD_LIBRARY(
 )
 
 ADD_LIBRARY(
+        sender STATIC
+
+        src/sender/sender.src.cpp
+        src/sender/sender.src.hpp
+)
+
+ADD_LIBRARY(
         logger STATIC
 
         src/logger.src.cpp
@@ -114,7 +121,7 @@ SET_TARGET_PROPERTIES(types PROPERTIES LINKER_LANGUAGE CXX)
 SET_TARGET_PROPERTIES(debug PROPERTIES LINKER_LANGUAGE CXX)
 
 # The libraries array
-SET(libs ds_api server parsers models logger lib_db ossl debug)
+SET(libs ds_api server sender parsers models logger lib_db ossl debug)
 
 # ----
 # The executable, and linking

@@ -35,7 +35,7 @@ namespace Fannst::FSMTPServer::Models
 
         // Creates the query
         const char *query = "INSERT INTO fmail.queued_emails ("
-                            "m_uuid, m_timestamp"
+                            "m_timestamp, m_uuid"
                             ") VALUES ("
                             "?, ?"
                             ")";
@@ -65,6 +65,13 @@ namespace Fannst::FSMTPServer::Models
         erc = cass_future_error_code(future);
         if (erc != CassError::CASS_OK)
         {
+            // Gets the error message
+            const char *message = nullptr;
+            std::size_t messageLen;
+            cass_future_error_message(future, &message, &messageLen);
+            PREP_ERROR("Cassandra Error", message)
+
+            // Sets the return code
             rc = -1;
         }
 
@@ -96,7 +103,7 @@ namespace Fannst::FSMTPServer::Models
         // Creates the query
         // ----
 
-        const char *query = "SELECT m_uuid, m_timestamp FROM fmail.queued_emails LIMIT ? ORDER BY m_timestamp INC";
+        const char *query = "SELECT m_uuid, m_timestamp FROM fmail.queued_emails LIMIT ?";
 
         // ----
         // Creates the statement
@@ -122,30 +129,51 @@ namespace Fannst::FSMTPServer::Models
         erc = cass_future_error_code(future);
         if (erc != CassError::CASS_OK)
         {
-            // Sets the error code
+            // Gets the error message
+            const char *message = nullptr;
+            std::size_t messageLen;
+            cass_future_error_message(future, &message, &messageLen);
+            PREP_ERROR("Cassandra Error", message)
+
+            // Sets the return code
             rc = -1;
         } else
         {
+            const CassResult *cassResult = nullptr;
+            CassIterator *iterator = nullptr;
+
             // Gets the result
-            const CassResult *result = cass_future_get_result(future);
+            cassResult = cass_future_get_result(future);
             // Creates the iterator
-            CassIterator *iterator = cass_iterator_from_result(result);
+            iterator = cass_iterator_from_result(cassResult);
 
             // Checks if there are any results to begin with
-            if (cass_iterator_next(iterator))
+            while (cass_iterator_next(iterator))
             {
+                const CassRow *row = nullptr;
+                CassUuid m_uuid{};
+                cass_int64_t m_timestamp{};
+
+                // ----
+                // Processes the data
+                // ----
+
                 // Gets the current row
-                const CassRow *row = cass_iterator_get_row(iterator);
+                row = cass_iterator_get_row(iterator);
 
-                // Gets the value
-                const CassValue *value = cass_row_get_column(row, 0);
+                // Gets the values
+                cass_value_get_uuid(cass_row_get_column_by_name(row, "m_uuid"), &m_uuid);
+                cass_value_get_int64(cass_row_get_column_by_name(row, "m_timestamp"), &m_timestamp);
 
-                // Creates the item iterator
-                CassIterator *itemIterator = nullptr;
+                // ----
+                // Pushes the values to the result vector
+                // ----
+
+                result.emplace_back(QueuedEmail(m_timestamp, m_uuid));
             }
 
             // Frees the memory
-            cass_result_free(result);
+            cass_result_free(cassResult);
             cass_iterator_free(iterator);
         }
 

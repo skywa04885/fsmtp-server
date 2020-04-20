@@ -10,6 +10,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <unistd.h>
 
 namespace Fannst::FSMTPServer::Logger
 {
@@ -78,6 +79,8 @@ namespace Fannst::FSMTPServer::Logger
                 {
                     // Holds the message
                     std::ostringstream stream("");
+                    // Appends the thread id
+                    stream << 'T' << getpid() << " - ";
                     // Appends the prefix
                     stream << "\033[36m" << this->c_Prefix << "\033[0m: ";
                     // Creates another switch statement for the current debug level

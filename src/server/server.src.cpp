@@ -324,8 +324,7 @@ namespace Fannst::FSMTPServer::Server
                 {
                     id = dataBuffer.substr(dataBuffer.length() - 10, dataBuffer.length()).find("\r\n.\r\n");
                 }
-                if (id != std::string::npos)
-                {
+                if (id != std::string::npos) {
                     // Sets the status
                     connPhasePt = ConnPhasePT::PHASE_PT_DATA_END;
 
@@ -339,9 +338,11 @@ namespace Fannst::FSMTPServer::Server
                     // Gets the username from the transport from address
                     MIMEParser::splitAddress(&result.m_TransportFrom.e_Address[0], &username, &domain);
 
+                    // Stores if we need to relay
+                    bool relay = strcmp(&domain[0], GE_DOMAIN) == 0;
+
                     // Performs the check
-                    if (strcmp(&domain[0], GE_DOMAIN) == 0 && strcmp(&username[0], &userQuickAccess->u_Username[0]) != 0)
-                    {
+                    if (relay && strcmp(&username[0], &userQuickAccess->u_Username[0]) != 0) {
                         // Sends the message
                         char *msg = ServerCommand::gen(551, "Error: You cannot send from another "
                                                             "username except your own one", nullptr, 0);
@@ -389,7 +390,20 @@ namespace Fannst::FSMTPServer::Server
                     // Checks if the email needs to be relayed, if not.. Just store it in the database
                     // ----
 
-                    result.save(connection.c_Session);
+                    if (!relay)
+                    {
+                        result.save(connection.c_Session);
+                    } else
+                    {
+                        // Creates the queue email
+                        Models::QueuedEmail queuedEmail(result.m_ReceiveTimestamp, result.m_UUID);
+
+                        // Stores the queue email
+                        queuedEmail.save(connection.c_Session);
+
+                        // Stores the email itself
+                        result.save(connection.c_Session);
+                    }
 
                     continue;
                 }
