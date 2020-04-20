@@ -14,8 +14,9 @@ namespace Fannst::FSMTPServer::Models
      * @param m_timestamp
      * @param m_uuid
      */
-    QueuedEmail::QueuedEmail(const long &m_timestamp, const CassUuid &m_uuid):
-        m_timestamp(m_timestamp), m_uuid(m_uuid) {}
+    QueuedEmail::QueuedEmail(const long &m_Timestamp, const CassUuid &m_UUID, const long &m_Bucket,
+            const CassUuid &m_UserUUID):
+            m_Timestamp(m_Timestamp), m_UUID(m_UUID), m_Bucket(m_Bucket), m_UserUUID(m_UserUUID) {}
 
     /**
      * Saves an queued email
@@ -35,9 +36,9 @@ namespace Fannst::FSMTPServer::Models
 
         // Creates the query
         const char *query = "INSERT INTO fmail.queued_emails ("
-                            "m_timestamp, m_uuid"
+                            "m_timestamp, m_uuid, m_bucket, m_user_uuid"
                             ") VALUES ("
-                            "?, ?"
+                            "?, ?, ?, ?"
                             ")";
 
         // ----
@@ -45,11 +46,13 @@ namespace Fannst::FSMTPServer::Models
         // ----
 
         // Creates the statement
-        statement = cass_statement_new(query, 2);
+        statement = cass_statement_new(query, 4);
 
         // Binds the values
-        cass_statement_bind_int64(statement, 0, this->m_timestamp);
-        cass_statement_bind_uuid(statement, 1, this->m_uuid);
+        cass_statement_bind_int64(statement, 0, this->m_Timestamp);
+        cass_statement_bind_uuid(statement, 1, this->m_UUID);
+        cass_statement_bind_int64(statement, 2, this->m_Bucket);
+        cass_statement_bind_uuid(statement, 3, this->m_UserUUID);
 
         // ----
         // Executes the query
@@ -103,7 +106,7 @@ namespace Fannst::FSMTPServer::Models
         // Creates the query
         // ----
 
-        const char *query = "SELECT m_uuid, m_timestamp FROM fmail.queued_emails LIMIT ?";
+        const char *query = "SELECT * FROM fmail.queued_emails LIMIT ?";
 
         // ----
         // Creates the statement
@@ -152,7 +155,9 @@ namespace Fannst::FSMTPServer::Models
             {
                 const CassRow *row = nullptr;
                 CassUuid m_uuid{};
+                CassUuid m_user_uuid{};
                 cass_int64_t m_timestamp{};
+                cass_int64_t m_bucket{};
 
                 // ----
                 // Processes the data
@@ -163,13 +168,15 @@ namespace Fannst::FSMTPServer::Models
 
                 // Gets the values
                 cass_value_get_uuid(cass_row_get_column_by_name(row, "m_uuid"), &m_uuid);
+                cass_value_get_uuid(cass_row_get_column_by_name(row, "m_user_uuid"), &m_user_uuid);
                 cass_value_get_int64(cass_row_get_column_by_name(row, "m_timestamp"), &m_timestamp);
+                cass_value_get_int64(cass_row_get_column_by_name(row, "m_bucket"), &m_bucket);
 
                 // ----
                 // Pushes the values to the result vector
                 // ----
 
-                result.emplace_back(QueuedEmail(m_timestamp, m_uuid));
+                result.emplace_back(QueuedEmail(m_timestamp, m_uuid, m_bucket, m_user_uuid));
             }
 
             // Frees the memory

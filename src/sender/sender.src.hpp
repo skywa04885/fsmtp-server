@@ -15,6 +15,7 @@
 #include "../db/cassandra.src.hpp"
 #include "../queued-email.src.hpp"
 #include "../mailer/mailer.src.hpp"
+#include "../email.src.hpp"
 
 namespace Fannst::FSMTPServer::Sender
 {

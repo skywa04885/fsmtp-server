@@ -24,7 +24,7 @@ namespace Fannst::FSMTPServer::Models
          * @param m_timestamp
          * @param m_uuid
          */
-        QueuedEmail(const long &m_timestamp, const CassUuid &m_uuid);
+        QueuedEmail(const long &m_Timestamp, const CassUuid &m_UUID, const long &m_Bucket, const CassUuid &m_UserUUID);
 
         /**
          * Saves an queued email
@@ -41,8 +41,10 @@ namespace Fannst::FSMTPServer::Models
          * @return
          */
         static BYTE get(CassSession *cassSession, std::vector<QueuedEmail> &result, const int &count);
-    private:
-        long m_timestamp;
-        CassUuid m_uuid;
+
+        long m_Timestamp;
+        long m_Bucket;
+        CassUuid m_UserUUID;
+        CassUuid m_UUID;
     };
 }

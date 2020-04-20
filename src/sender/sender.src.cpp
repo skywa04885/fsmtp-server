@@ -68,7 +68,7 @@ namespace Fannst::FSMTPServer::Sender
 
                 // Starts the loop
                 messageSendIndex = 0;
-                for (const Models::QueuedEmail &qm : queuedEmails)
+                for (Models::QueuedEmail &qm : queuedEmails)
                 {
                     // Prints the debug message
                     DEBUG_ONLY(print << "Sending message [" << messageSendIndex<< "], wish me good luck ! ..." <<
@@ -77,6 +77,9 @@ namespace Fannst::FSMTPServer::Sender
                     // ----
                     // Gets the email details
                     // ----
+
+                    Models::Email m{};
+                    Models::Email::getMessage(cassConnection.c_Session, qm.m_Bucket, qm.m_UserUUID, qm.m_UUID, m);
 
                     // ----
                     // Creates the composer options, and sends the email
@@ -91,6 +94,9 @@ namespace Fannst::FSMTPServer::Sender
                     // Increments the index
                     messageSendIndex++;
                 }
+
+                // Prints to the console
+                DEBUG_ONLY(print << "Sent [" << queuedEmails.size() << "] emails ;)" << Logger::ConsoleOptions::ENDL)
             }
 
             // ----

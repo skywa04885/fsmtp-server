@@ -342,12 +342,18 @@ namespace Fannst::FSMTPServer::Server
                     bool relay = strcmp(&domain[0], GE_DOMAIN) == 0;
 
                     // Performs the check
-                    if (relay && strcmp(&username[0], &userQuickAccess->u_Username[0]) != 0) {
+                    if (relay && strcmp(&username[0], &userQuickAccess->u_Username[0]) != 0)
+                    { // The client tries to send from an address that is not his own
+
                         // Sends the message
                         char *msg = ServerCommand::gen(551, "Error: You cannot send from another "
                                                             "username except your own one", nullptr, 0);
                         Responses::write(&sock_fd, ssl, msg, strlen(msg));
                         free(msg);
+                    } else if (relay)
+                    { // Sets the message user id
+
+                        result.m_UserUUID = userQuickAccess->u_Uuid;
                     }
 
                     // ----
@@ -395,14 +401,17 @@ namespace Fannst::FSMTPServer::Server
                         result.save(connection.c_Session);
                     } else
                     {
+                        // !NOTICE! We store the email first, because the bucket will be generated while saving
+                        // Stores the email itself
+                        result.save(connection.c_Session);
+
                         // Creates the queue email
-                        Models::QueuedEmail queuedEmail(result.m_ReceiveTimestamp, result.m_UUID);
+                        Models::QueuedEmail queuedEmail(result.m_ReceiveTimestamp, result.m_UUID, result.m_Bucket,
+                                result.m_UserUUID);
 
                         // Stores the queue email
                         queuedEmail.save(connection.c_Session);
 
-                        // Stores the email itself
-                        result.save(connection.c_Session);
                     }
 
                     continue;

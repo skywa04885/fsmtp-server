@@ -11,11 +11,13 @@
 #include <iostream>
 #include <chrono>
 #include <string>
-#include <math.h>
+#include <cstring>
 
+#include <math.h>
 #include <cassandra.h>
 
 #include "types/mime.src.hpp"
+#include "db/mime-helpers.src.hpp"
 
 namespace Fannst::FSMTPServer::Models
 {
@@ -61,8 +63,27 @@ namespace Fannst::FSMTPServer::Models
         std::vector<Types::MimeHeader> m_FullHeaders;
         std::vector<Types::MimeBodySection> m_Content;
         // Methods
+
+        /**
+         * Saves an email inside cassandra
+         * @param session
+         * @return
+         */
         int save(CassSession *session);
+
+        /**
+         * Gets the current email bucket
+         */
         static long getCurrentBucket();
+
+        /**
+         * Gets an email by uuid
+         * @param cassSession
+         * @param uuid
+         * @param target
+         * @return
+         */
+        static BYTE getMessage(CassSession *cassSession, long bucket, CassUuid userUuid, CassUuid &uuid, Email &target);
         // Constructor and destructor
         ~Email()
         {

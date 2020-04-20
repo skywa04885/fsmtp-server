@@ -63,6 +63,8 @@ create type if not exists email_content_section (
 create table if not exists queued_emails (
     m_uuid uuid,
     m_timestamp bigint,
+    m_bucket bigint,
+    m_user_uuid uuid,
     primary key(m_uuid, m_timestamp)
 ) with clustering order by(m_timestamp desc);
 
@@ -89,7 +91,7 @@ create table if not exists inbox_emails (
 
 -- Creates the quick access email table
 create table if not exists inbox_emails_quick_access (
-    m_bucket bigint,
+    m_Bucket bigint,
     m_user_uuid uuid,
     m_uuid uuid,
     m_receive_timestamp bigint,

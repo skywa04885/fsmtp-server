@@ -21,6 +21,10 @@ ADD_LIBRARY(
 
         src/db/cassandra.src.hpp
         src/db/cassandra.src.cpp
+
+        # The helpers
+        src/db/mime-helpers.src.cpp
+        src/db/mime-helpers.src.hpp
 )
 
 ADD_LIBRARY(
@@ -117,11 +121,28 @@ ADD_LIBRARY(
         src/ds-api/server.src.cpp
 )
 
+ADD_LIBRARY(
+        mailer
+
+        src/mailer/mailer.src.cpp
+        src/mailer/mailer.src.hpp
+        src/mailer/commands.src.hpp
+        src/mailer/commands.src.cpp
+        src/mailer/socket-handler.cpp
+        src/mailer/socket-handler.hpp
+        src/mailer/resolver.src.cpp
+        src/mailer/resolver.src.hpp
+        src/mailer/dkim/canonicalization/relaxed.src.cpp
+        src/mailer/dkim/dkim.src.cpp
+        src/mailer/dkim/dkim.src.hpp
+        src/mailer/dkim/parsers.src.cpp
+)
+
 SET_TARGET_PROPERTIES(types PROPERTIES LINKER_LANGUAGE CXX)
 SET_TARGET_PROPERTIES(debug PROPERTIES LINKER_LANGUAGE CXX)
 
 # The libraries array
-SET(libs ds_api server sender parsers models logger lib_db ossl debug)
+SET(libs sender mailer ds_api server parsers models logger lib_db ossl debug)
 
 # ----
 # The executable, and linking
@@ -136,4 +157,4 @@ ADD_EXECUTABLE(
 )
 
 # Links the libraries
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${binaries} ${libs} -lresolv -lssl -lcrypto -lpthread -lcassandra)
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${binaries} ${libs} -lresolv -lssl -lcrypto -lpthread -lcassandra -lfannst_libcompose -lfannst_libencoding)
