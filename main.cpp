@@ -20,12 +20,14 @@ using namespace Fannst::FSMTPServer;
 
 int main(int argc, char **argv) {
 
+    Timer t("Composer");
+
     Mailer::Composer::MailerComposerOptions opts{};
     opts.o_PlainText = "Hello World";
     opts.o_HTML = "<h1>Hello World</h1>";
     opts.o_UseExistingSections = false;
-    opts.o_To.emplace_back(Types::EmailAddress{"Luke Rieff", "luke.rieff@gmail.com"});
-    opts.o_From.emplace_back(Types::EmailAddress{"Fannst Webmaster", "webmaster@fannst.nl"});
+    opts.o_To.emplace_back(Types::EmailAddress{"Test", "luke.rieff@gmail.com"});
+    opts.o_From.emplace_back(Types::EmailAddress{"Webmaster", "webmaster@fannst.nl"});
     opts.o_Subject = "Hello World";
     opts.o_Domain = GE_DOMAIN;
     opts.o_DKIM.o_Domain = GE_DOMAIN;

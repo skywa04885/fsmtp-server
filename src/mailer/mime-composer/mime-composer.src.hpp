@@ -13,9 +13,12 @@
 #include <vector>
 #include <random>
 #include <malloc.h>
+#include <memory>
+#include <chrono>
 
 #include "../../pre.hpp"
 #include "../../types/mime.src.hpp"
+#include "../dkim/dkim.src.hpp"
 #include "generators.src.hpp"
 
 namespace Fannst::FSMTPServer::Mailer::Composer
@@ -57,5 +60,24 @@ namespace Fannst::FSMTPServer::Mailer::Composer
      * @param hRet
      * @param hRetLen
      */
-    void generateHeaders(std::vector<Types::MimeHeader> &headers, char **hRet, std::size_t *hRetLen);
+    void generateHeaders(const std::vector<Types::MimeHeader> &headers, char **hRet, std::size_t *hRetLen);
+
+    /**
+     * Generates an MIME address list from email addresses
+     * @param addresses
+     * @param lRet
+     * @param lRetLen
+     */
+    void generateAddressList(const std::vector<Types::EmailAddress> &addresses, char **lRet, std::size_t *lRetLen);
+
+    /**
+     * Generates the multipart body for an email message
+     * @param sections
+     * @param boundary
+     * @param bRet
+     * @param bRetLen
+     */
+    void generateMultipartAlternativeBody(const std::vector<Types::MimeBodySection> &sections,
+            const char *boundary, const std::size_t &boundaryLen,
+            char **bRet, std::size_t *bRetLen);
 }
