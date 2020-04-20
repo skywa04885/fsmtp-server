@@ -561,20 +561,153 @@ namespace Fannst::FSMTPServer::Models {
                     // Prepares the iterator
                     // ----
 
+                    // Gets the value
+                    sectionValue = cass_row_get_column_by_name(row, "m_content");
+
+                    // Creates the iterator
+                    collectionSectionIt = cass_iterator_from_collection(sectionValue);
+
+                    // ----
+                    // Starts iterating
+                    // ----
+
+                    // Iterators
+                    while (cass_iterator_next(collectionSectionIt))
+                    {
+                        Types::MimeBodySection s{};
+                        const CassValue *sectionValue = nullptr;
+                        CassIterator *valueFields = nullptr;
+
+                        // ----
+                        // Prepares
+                        // ----
+
+                        // Gets the section value
+                        sectionValue = cass_iterator_get_value(collectionSectionIt);
+
+                        // Creates the fields iterator
+                        valueFields = cass_iterator_fields_from_user_type(sectionValue);
+
+                        // ----
+                        // Starts the iteration
+                        // ----
+
+                        while (cass_iterator_next(valueFields))
+                        {
+                            const char *fieldName = nullptr;
+                            const CassValue *fieldValue = nullptr;
+                            std::size_t fieldLen;
+
+                            // ----
+                            // Gets the value and name
+                            // ----
+
+                            // Gets the field name
+                            cass_iterator_get_user_type_field_name(valueFields, &fieldName, &fieldLen);
+
+                            // Gets the field value
+                            fieldValue = cass_iterator_get_user_type_field_value(valueFields);
+
+                            // ----
+                            // Checks which field it is
+                            // ----
+
+                            if (fieldName[2] == 'c' && strcmp(&fieldName[0], "e_content") == 0)
+                            { // Is "e_content"
+
+                                const char *eContentTemp = nullptr;
+
+                                // Gets the string
+                                cass_value_get_string(fieldValue, &eContentTemp, &tempLen);
+
+                                // Allocates the memory for the copy
+                                s.s_Content = reinterpret_cast<char *>(malloc(ALLOCATE_NULL_TERMINATION(tempLen)));
+
+                                // Copies the memory
+                                memcpy(&const_cast<char *>(s.s_Content)[0], &eContentTemp[0], tempLen + 1);
+                            } else if (fieldName[2] == 't' && strcmp(&fieldName[0], "e_type") == 0)
+                            { // Is "e_type"
+
+                                // Gets the temp int
+                                cass_value_get_int32(fieldValue, &tempInt);
+
+                                // Stores the content type in the result
+                                s.s_ContentType = static_cast<Types::MimeContentType>(tempInt);
+                            } else if (fieldName[2] == 'f' && strcmp(&fieldName[0], "e_full_headers") == 0)
+                            { // Is "e_full_headers"
+                                CassIterator *fieldHeadersValueIt = nullptr;
+
+                                // ----
+                                // Prepares the iterator
+                                // ----
+
+                                // Gets the value
+                                fieldHeadersValueIt = cass_iterator_from_collection(fieldValue);
+
+                                // ----
+                                // Starts looping over the fields
+                                // ----
+
+                                while (cass_iterator_next(fieldHeadersValueIt))
+                                {
+                                    Types::MimeHeader h{};
+
+                                    // Parses the header
+                                    Cassandra::Helpers::getHeadersFromColumn(
+                                            cass_iterator_get_value(fieldHeadersValueIt), h);
+
+                                    // Pushes the header to the final result
+                                    s.s_FullHeaders.push_back(h);
+                                }
+
+                                // ----
+                                // Frees the memory
+                                // ----
+
+                                cass_iterator_free(fieldHeadersValueIt);
+                            } else if (fieldName[2] == 'i' && strcmp(&fieldName[0], "e_index") == 0)
+                            { // Is "e_index"
+
+                                // Gets the field index
+                                cass_value_get_int32(fieldValue, &s.s_Index);
+                            } else PREP_ERROR("Field name not recognized, please fix ;)", fieldName);
+                        }
+
+                        // ----
+                        // Pushes the result to the target
+                        // ----
+
+                        target.m_Content.push_back(s);
+
+                        // ----
+                        // Frees the memory
+                        // ----
+
+                        cass_iterator_free(valueFields);
+                    }
+
                     // ----
                     // Frees the memory
                     // ----
 
                     cass_iterator_free(collectionSectionIt);
                 }
-
-                // ----
-                // Frees the memory
-                // ----
             }
+
+            // ----
+            // Frees the memory
+            // ----
+
+            cass_iterator_free(iterator);
+            cass_result_free(result);
         }
 
-        std::cout << target.m_TransportTo << std::endl;
+        // ----
+        // Frees the memory
+        // ----
+
+        cass_future_free(future);
+        cass_statement_free(statement);
 
         return rc;
     }

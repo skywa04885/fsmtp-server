@@ -70,16 +70,19 @@ namespace Fannst::FSMTPServer::Sender
                 messageSendIndex = 0;
                 for (Models::QueuedEmail &qm : queuedEmails)
                 {
-                    // Prints the debug message
-                    DEBUG_ONLY(print << "Sending message [" << messageSendIndex<< "], wish me good luck ! ..." <<
-                        Logger::ConsoleOptions::ENDL)
-
                     // ----
                     // Gets the email details
                     // ----
 
-                    Models::Email m{};
-                    Models::Email::getMessage(cassConnection.c_Session, qm.m_Bucket, qm.m_UserUUID, qm.m_UUID, m);
+                    // Creates the message
+                    Models::Email email{};
+
+                    // Gets the message from the database
+                    Models::Email::getMessage(cassConnection.c_Session, qm.m_Bucket, qm.m_UserUUID, qm.m_UUID, email);
+
+                    // Prints the message if requested
+                    DEBUG_ONLY(print << "Sending from: " << email.m_TransportFrom.e_Address << ", to: "
+                        << email.m_TransportTo.e_Address << Logger::ConsoleOptions::ENDL)
 
                     // ----
                     // Creates the composer options, and sends the email
