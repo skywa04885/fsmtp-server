@@ -36,12 +36,13 @@ namespace Fannst::FSMTPServer::Types
     {
         const char *h_Key;
         const char *h_Value;
+        bool h_IsHeap{false};
     } MimeHeader;
 
     typedef struct
     {
         int s_Index;
-        char *s_Content;
+        const char *s_Content;
         std::vector<MimeHeader> s_FullHeaders;
         MimeContentType s_ContentType;
     } MimeBodySection;

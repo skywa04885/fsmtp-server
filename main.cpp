@@ -14,7 +14,37 @@
 #include "src/sender/sender.src.hpp"
 #include "src/logger.src.hpp"
 
+#include "src/mailer/mime-composer/mime-composer.src.hpp"
+
+using namespace Fannst::FSMTPServer;
+
 int main(int argc, char **argv) {
+
+    Mailer::Composer::MailerComposerOptions opts{};
+    opts.o_PlainText = "Hello World";
+    opts.o_HTML = "<h1>Hello World</h1>";
+    opts.o_UseExistingSections = false;
+    opts.o_To.emplace_back(Types::EmailAddress{"Luke Rieff", "luke.rieff@gmail.com"});
+    opts.o_From.emplace_back(Types::EmailAddress{"Fannst Webmaster", "webmaster@fannst.nl"});
+    opts.o_Subject = "Hello World";
+    opts.o_Domain = GE_DOMAIN;
+    opts.o_DKIM.o_Domain = GE_DOMAIN;
+    opts.o_DKIM.o_EnableDKIM = true;
+    opts.o_DKIM.o_KeySelector = "default";
+    opts.o_DKIM.o_PrivateKeyFile = "../keys/dkim/private-key.pem";
+
+    char *message = nullptr;
+    std::size_t messageLen;
+    Mailer::Composer::sexyComposingAlgorithm(opts, &message, &messageLen);
+
+    std::cout << "Message length:" << messageLen << std::endl;
+    std::cout << "------" << std::endl;
+    std::cout << message << std::endl;
+
+    free(message);
+
+    return 0;
+
     // Initializes the default values
     bool enableWebApi, enableSMTPServer, enableSender;
     enableWebApi = enableSMTPServer = false;

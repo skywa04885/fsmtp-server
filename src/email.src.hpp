@@ -93,10 +93,11 @@ namespace Fannst::FSMTPServer::Models
             free(const_cast<char *>(this->m_MessageID));
 
             // Frees the headers
-            for (auto &a : this->m_FullHeaders)
+            for (auto &h : this->m_FullHeaders)
             {
-                free(const_cast<char *>(a.h_Value));
-                free(const_cast<char *>(a.h_Key));
+                if (!h.h_IsHeap) continue;
+                free(const_cast<char *>(h.h_Value));
+                free(const_cast<char *>(h.h_Key));
             }
 
             // Frees the addresses
@@ -126,6 +127,7 @@ namespace Fannst::FSMTPServer::Models
                 // Frees the content headers
                 for (auto &h : s.s_FullHeaders)
                 {
+                    if (!h.h_IsHeap) continue;
                     free(const_cast<char *>(h.h_Value));
                     free(const_cast<char *>(h.h_Key));
                 }

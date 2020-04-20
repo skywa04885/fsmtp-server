@@ -85,9 +85,9 @@ namespace Fannst::FSMTPServer::Sender
                         << email.m_TransportTo.e_Address << Logger::ConsoleOptions::ENDL)
 
                     // ----
-                    // Creates the composer options, and sends the email
+                    // Creates the mime-composer options, and sends the email
                     // ----
-//                    // Generates the options for the composer
+//                    // Generates the options for the mime-composer
 //                    Composer::Options composerOptions{};
 //                    composerOptions.o_Domain = GE_DOMAIN;
 //

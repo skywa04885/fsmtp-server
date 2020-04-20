@@ -124,14 +124,29 @@ ADD_LIBRARY(
 ADD_LIBRARY(
         mailer
 
+        # The message composer
+        src/mailer/mime-composer/mime-composer.src.cpp
+        src/mailer/mime-composer/mime-composer.src.hpp
+        src/mailer/mime-composer/generators.src.cpp
+        src/mailer/mime-composer/generators.src.hpp
+
+        # The mailer itself
         src/mailer/mailer.src.cpp
         src/mailer/mailer.src.hpp
+
+        # The commands
         src/mailer/commands.src.hpp
         src/mailer/commands.src.cpp
+
+        # Handles events on the sockets
         src/mailer/socket-handler.cpp
         src/mailer/socket-handler.hpp
+
+        # Resolves DNS crap
         src/mailer/resolver.src.cpp
         src/mailer/resolver.src.hpp
+
+        # Dkim signer
         src/mailer/dkim/canonicalization/relaxed.src.cpp
         src/mailer/dkim/dkim.src.cpp
         src/mailer/dkim/dkim.src.hpp

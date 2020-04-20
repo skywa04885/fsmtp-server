@@ -258,7 +258,7 @@ namespace Fannst::FSMTPServer::MIMEParser
             }
 
             // Stores the header inside of the vector
-            headers.emplace_back(Types::MimeHeader{key, value});
+            headers.emplace_back(Types::MimeHeader{key, value, true});
 
             // Goes to the next token
             tok = strtok(nullptr, "\r");

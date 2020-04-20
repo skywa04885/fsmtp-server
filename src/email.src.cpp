@@ -533,7 +533,11 @@ namespace Fannst::FSMTPServer::Models {
                     while (cass_iterator_next(collectionHeaderIt))
                     {
                         // Creates the temp header
-                        Types::MimeHeader h{};
+                        Types::MimeHeader h{
+                            nullptr,
+                            nullptr,
+                            true
+                        };
 
                         // Gets the header values
                         Cassandra::Helpers::getHeadersFromColumn(cass_iterator_get_value(collectionHeaderIt), h);
@@ -650,7 +654,11 @@ namespace Fannst::FSMTPServer::Models {
 
                                 while (cass_iterator_next(fieldHeadersValueIt))
                                 {
-                                    Types::MimeHeader h{};
+                                    Types::MimeHeader h{
+                                        nullptr,
+                                        nullptr,
+                                        true
+                                    };
 
                                     // Parses the header
                                     Cassandra::Helpers::getHeadersFromColumn(

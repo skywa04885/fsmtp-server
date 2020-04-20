@@ -13,6 +13,7 @@
 
 #define GE_DOMAIN "fannst.nl"
 #define GE_CASSANDRA_CONTACT_POINTS "192.168.132.133"
+#define GE_VERSION "FSMTP v1.1 - Powered by Ubuntu"
 
 // -----
 // Define DEBUG in development, will give an advanced log
@@ -25,6 +26,12 @@
 #define PREP_ERROR(a, b)                                                            \
     std::cout << "\033[31m[ERROR]: \033[0m" << __FILE__ << "@" << __LINE__ << ": "  \
     << a << ": " << b << std::endl;
+
+#define PREP_ERROR_SIN(a)                                                           \
+    std::cout << "\033[31m[ERROR]: \033[0m" << __FILE__ << "@" << __LINE__ << ": "  \
+    << a << std::endl;
+
+#define PREP_ALLOCATE_INVALID(a) if (a == nullptr) PREP_ERROR_SIN("Could not allocate/reallocate memory !")
 
 // Will disable some single-line code
 #ifdef DEBUG
@@ -52,14 +59,3 @@
 // ----
 
 #define CRLF "\r\n"
-
-// ----
-// Assertions
-// ----
-
-#define ASSERT_REALLOC(a, b) if (a == nullptr) { \
-        std::cerr << "Could not resize buffer at position: " << __LINE__ << ", in file: " << __FILE__ << std::endl; \
-    } else                                                                                                          \
-    {                                                                                                               \
-        b = &a[0];                                                                                                  \
-    }
