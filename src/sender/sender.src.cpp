@@ -92,7 +92,7 @@ namespace Fannst::FSMTPServer::Sender
 //                    composerOptions.o_Domain = GE_DOMAIN;
 //
 //                    // Sends the message
-//                    Mailer mailer();
+//                    SMTPMailer mailer();
 
                     // Increments the index
                     messageSendIndex++;

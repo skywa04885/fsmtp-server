@@ -6,15 +6,14 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include <fannst_libcompose.hpp>
-
 #include "../logger.src.hpp"
+#include "../parsers/mime-parser.src.hpp"
 #include "dkim/dkim.src.hpp"
 #include "resolver.src.hpp"
 #include "commands.src.hpp"
 #include "socket-handler.hpp"
 
-namespace Fannst
+namespace Fannst::FSMTPServer::Mailer
 {
     typedef enum {
         MST_INITIAL = 0,
@@ -29,14 +28,18 @@ namespace Fannst
         MST_DATA_END
     } MailerState;
 
-    class Mailer
+    class SMTPMailer
     {
     public:
         /**
          * Constructor for the mailer
          * @param c_ComposerOptions
          */
-        explicit Mailer(Fannst::Composer::Options &c_ComposerOptions);
+
+        SMTPMailer(const char *c_Message, const std::vector<Types::EmailAddress> &c_To,
+                               const std::vector<Types::EmailAddress> &c_From):
+                c_Message(c_Message), c_To(c_To), c_From(c_From)
+        {}
 
         /**
          * Sends an email
@@ -44,10 +47,12 @@ namespace Fannst
          */
         int sendMessage(const char *extIp);
     private:
-        Fannst::Composer::Options &c_ComposerOptions;
+        const char *c_Message{nullptr};
+        const std::vector<Types::EmailAddress> &c_To;
+        const std::vector<Types::EmailAddress> &c_From;
     };
 
-    int transmitMessage(char *ipAddress, Fannst::Types::EmailAddress &mailFrom,
-                        Fannst::Types::EmailAddress &mailTo, std::string &messageBody, bool usingSSL,
-                        const char *extIp);
+    int transmitMessage(char *ipAddress, const Types::EmailAddress &mailFrom,
+        const Types::EmailAddress &mailTo, const char *messageBody, bool usingSSL,
+        const char *extIp);
 };

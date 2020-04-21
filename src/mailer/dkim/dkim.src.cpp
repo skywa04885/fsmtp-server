@@ -42,6 +42,104 @@ namespace Fannst::FSMTPServer::DKIM {
     }
 
     /**
+     * Generates th headers field
+     * @param raw
+     * @param ret
+     */
+    void generateHeadersField(const char *raw, char **ret)
+    {
+        char *tok = nullptr, *rawC = nullptr;
+        int splitPos, i;
+        std::size_t retSize, tempSize;
+
+        // ----
+        // Prepares the ret value
+        // ----
+
+        // Sets the buffer size
+        retSize = 1;
+
+        // Allocates the required memory
+        *ret = reinterpret_cast<char *>(malloc(1));
+        PREP_ALLOCATE_INVALID(*ret);
+
+        // Sets the null termination char
+        (*ret)[0] = '\0';
+
+        // ----
+        // Prepares the tokenizer
+        // ----
+
+        // Gets the length of raw
+        tempSize = strlen(&raw[0]);
+
+        // Allocates memory for the copy
+        rawC = reinterpret_cast<char *>(malloc(ALLOCATE_NULL_TERMINATION(tempSize)));
+
+        // Copies the memory
+        memcpy(&rawC[0], &raw[0], tempSize + 1);
+
+        // Creates the tokenizer
+        tok = strtok(&rawC[0], "\r\n");
+
+        // Starts looping
+        while (tok != nullptr)
+        {
+            // ----
+            // Prepares
+            // ----
+
+            // Gets the position of ':'
+            splitPos = findChar(&tok[0], ':');
+
+            // Converts the chars to lower case
+            for (i = 0; i < splitPos; i++) tok[i] = static_cast<char>(tolower(tok[i]));
+
+            // ----
+            // Checks if we should use the header
+            // ----
+
+            // Checks if it should be used
+            if (!shouldUseHeader(&tok[0]))
+            {
+                // Goes to the next token
+                tok = strtok(nullptr, "\r\n");
+
+                // Skips
+                continue;
+            }
+
+            // Sets the split part
+            tok[splitPos] = '\0';
+
+            // ----
+            // Resize the buffer
+            // ----
+
+            // Sets the new buffer size
+            retSize += splitPos + 1;
+
+            // Reallocates the buffer
+            *ret = reinterpret_cast<char *>(realloc(&(*ret)[0], retSize));
+            PREP_ALLOCATE_INVALID(*ret);
+
+            // ----
+            // Concats the data into it
+            // ----
+
+            strcat(&(*ret)[0], &tok[0]);
+            strcat(&(*ret)[0], ":");
+
+            // Gets the next token
+            tok = strtok(nullptr, "\r\n");
+        }
+
+        // Removes the ':' at the end
+        (*ret)[retSize-2] = '\0';
+    }
+
+
+    /**
      * Signs an MIME message
      * @param raw
      * @param config
@@ -61,6 +159,8 @@ namespace Fannst::FSMTPServer::DKIM {
         char *bodyHash = nullptr;           // Contains the body hash
         char *headerSigRet = nullptr;       // Contains the signature itself
         char *canBodyRet = nullptr;         // Contains the canonicalized body
+
+        char *headerPartsRet = nullptr;     // The parts of the headers, which will be canonicalized
 
         // Will be used to seperate the headers from the first generated DKIM header
         std::size_t headerEndIndex;
@@ -167,10 +267,19 @@ namespace Fannst::FSMTPServer::DKIM {
         DEBUG_ONLY(print << "Body hash created: " << bodyHash << Logger::ConsoleOptions::ENDL)
 
         // ----
+        // Calculates the h field
+        // ----
+
+        // Generates the header fields
+        generateHeadersField(&headerRet[0], &headerPartsRet);
+
+        // Sets the h field in the parts
+        buildSigPart("h", headerPartsRet, &sigParts[8]);
+
+        // ----
         // Adds the header fields and body hash to the sigParts
         // ----
 
-        buildSigPart("h", "mime-version:date:message-id:from:to:subject", &sigParts[8]);
         buildSigPart("bh", bodyHash, &sigParts[9]);
 
         // ----
@@ -186,10 +295,6 @@ namespace Fannst::FSMTPServer::DKIM {
 
         // Creates the temp dkim header, which will be passed into the algorithm
         formatSignature(sigParts, &sig, false);
-
-        // ----
-        // Appends the DKIM-Header without signature itself
-        // ----
 
         // Allocates the memory, with the required DKIM Signature
         headerRet = reinterpret_cast<char *>(realloc(&headerRet[0], ALLOC_CAS_STRING(strlen(&headerRet[0]),
@@ -208,11 +313,17 @@ namespace Fannst::FSMTPServer::DKIM {
         if (config->d_Ago == DKIMCanAlgorithms::DCA_RELAXED_SIMPLE ||
             config->d_Ago == DKIMCanAlgorithms::DCA_RELAXED_RELAXED)
         { // Relaxed
+
+            // Canonicalizes
             canonicalizeHeadersRelaxed(headerRet, &canHeadersRet);
         } else
         { // Simple
             // TODO: Implement simple algorithm
         }
+
+        // ----
+        // Generates the signature ( Final stage )
+        // ----
 
         // Prints the canonicalized headers
         DEBUG_ONLY(print << "Finished header Canonicalization: " << Logger::ConsoleOptions::ENDL)
@@ -234,6 +345,9 @@ namespace Fannst::FSMTPServer::DKIM {
         // ----
         // Formats the final headers, and stores them inside sig
         // ----
+
+        // Frees the old signature
+        free(sig);
 
         // Performs the formatting with newline chars
         formatSignature(sigParts, &sig, true);
@@ -280,9 +394,10 @@ namespace Fannst::FSMTPServer::DKIM {
         free(bodyHash);
         free(headerSigRet);
         free(canBodyRet);
+        free(headerPartsRet);
 
         // Frees our array
-        for (char i = 0; i < FANNST_DKIM_TOTAL_PARTS; i++) free(sigParts[i]);
+        for (BYTE i = 0; i < FANNST_DKIM_TOTAL_PARTS; i++) free(sigParts[i]);
 
         return 0;
     }
@@ -391,6 +506,9 @@ namespace Fannst::FSMTPServer::DKIM {
 
                 // Sets the cLen to zero
                 cLen = 0;
+
+                // If required, clears the temp string
+                if (clearTempString) free(curr);
 
                 continue;
             }

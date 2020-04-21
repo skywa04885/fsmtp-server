@@ -91,6 +91,13 @@ namespace Fannst::FSMTPServer::DKIM
     void canonicalizeHeadersRelaxed(const char *raw, char **ret);
 
     /**
+     * Generates the headers field
+     * @param raw
+     * @param ret
+     */
+    void generateHeadersField(const char *raw, char **ret);
+
+    /**
      * Canonicalizes body using the relaxed method
      * @param raw
      * @param ret
@@ -122,4 +129,82 @@ namespace Fannst::FSMTPServer::DKIM
             res++;
         }
     }
+
+    /**
+ * Checks if the header should be used
+ * @param h
+ * @return
+ */
+    inline bool shouldUseHeader(const char *h)
+    {
+        char *cTmp = reinterpret_cast<char *>(alloca(11));
+
+        if (h[0] == 'f')
+        {
+            // Copies the memory
+            memcpy(&cTmp[0], &h[0], 4);
+            cTmp[4] = '\0';
+
+            // Checks if it matches
+            if (strcmp(&cTmp[0], "from") == 0) return true;
+        } else if (h[0] == 't')
+        {
+            // Copies the memory
+            memcpy(&cTmp[0], &h[0], 2);
+            cTmp[2] = '\0';
+
+            // Checks if it matches
+            if (strcmp(&cTmp[0], "to") == 0) return true;
+        } else if (h[0] == 's')
+        {
+            // Copies the memory
+            memcpy(&cTmp[0], &h[0], 7);
+            cTmp[7] = '\0';
+
+            // Checks if it matches
+            if (strcmp(&cTmp[0], "subject") == 0) return true;
+        } else if (h[0] == 'd')
+        {
+            // Copies the memory
+            memcpy(&cTmp[0], &h[0], 4);
+            cTmp[4] = '\0';
+
+            // Checks if it matches
+            if (strcmp(&cTmp[0], "date") == 0) return true;
+
+            // Copies the string
+            memcpy(&cTmp[0], &h[0], 14);
+            cTmp[14] = '\0';
+
+            // Checks if it matches
+            if (strcmp(&cTmp[0], "dkim-signature") == 0) return true;
+        } else if (h[0] == 'k')
+        {
+            // Copies the memory
+            memcpy(&cTmp[0], &h[0], 8);
+            cTmp[8] = '\0';
+
+            // Checks if it matches
+            if (strcmp(&cTmp[0], "keywords") == 0) return true;
+        } else if (h[0] == 'm')
+        {
+            // Copies the memory
+            memcpy(&cTmp[0], &h[0], 10);
+            cTmp[10] = '\0';
+
+            // Checks if it matches
+            if (strcmp(&cTmp[0], "message-id") == 0) return true;
+
+            // Copies the string
+            memcpy(&cTmp[0], &h[0], 12);
+            cTmp[12] = '\0';
+
+            // Checks if it matches
+            if (strcmp(&cTmp[0], "mime-version") == 0) return true;
+
+        }
+
+        return false;
+    }
+
 }

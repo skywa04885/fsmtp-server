@@ -58,12 +58,12 @@ namespace Fannst::FSMTPServer::Mailer::Composer
         // Inserts the default headers
         // ----
 
-        // The X-Mailer
+        // The X-SMTPMailer
         defaultHeaders.emplace_back(Types::MimeHeader{"X-Mailer", GE_VERSION, false});
         // The MIME-Version
         defaultHeaders.emplace_back(Types::MimeHeader{"MIME-Version", "1.0", false});
         // The credits for myself haha
-        defaultHeaders.emplace_back(Types::MimeHeader{"X-Mailer-Author", "Luke A.C.A. Rieff", false});
+        defaultHeaders.emplace_back(Types::MimeHeader{"X-Author", "Luke A.C.A. Rieff", false});
         // The subject, disable heap so the user can clear it later himself
         defaultHeaders.emplace_back(Types::MimeHeader{"Subject", options.o_Subject, false});
 

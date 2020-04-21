@@ -39,9 +39,13 @@ namespace Fannst::dns
         // Loops over the records
         for (std::size_t i = 0; i < res_length; i++)
         {
+            // Parses the record
             ns_parserr(&msg, ns_s_an, i, &rr);
+
+            // Gets the exchange
             dn_expand(ns_msg_base(msg), ns_msg_end(msg), ns_rr_rdata(rr) + 2, exchange, sizeof(exchange));
 
+            // Pushes it to the final vector
             target.emplace(target.begin(), exchange, ns_rr_name(rr), ns_rr_type(rr),
                            ns_rr_ttl(rr), ns_rr_class(rr), ns_rr_rdlen(rr));
         }
@@ -63,11 +67,12 @@ namespace Fannst::dns
     {
         unsigned long len;
 
-        // Copies the strings
+        // Copies the exchange
         len = strlen(r_Exchange);
         this->r_Exchange = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(len, 0)));
         memcpy(this->r_Exchange, r_Exchange, len);
 
+        // Copies the name
         len = strlen(r_Name);
         this->r_Name = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(len, 0)));
         memcpy(this->r_Name, r_Name, len);
@@ -77,6 +82,12 @@ namespace Fannst::dns
         this->r_TTL = r_TTL;
         this->r_Class = r_Class;
         this->r_RdLen = r_RdLen;
+    }
+
+    ResolverMXRecord::~ResolverMXRecord()
+    {
+        free(this->r_Name);
+        free(this->r_Exchange);
     }
 
     /**

@@ -1,17 +1,12 @@
 #include "mailer.src.hpp"
 
-namespace Fannst
+namespace Fannst::FSMTPServer::Mailer
 {
-
-    Mailer::Mailer(Fannst::Composer::Options &c_ComposerOptions):
-        c_ComposerOptions(c_ComposerOptions)
-    {}
-
     /**
      * Sends an email
      * @return
      */
-    int Mailer::sendMessage(const char *extIp) {
+    int SMTPMailer::sendMessage(const char *extIp) {
 
         // ----
         // Initializes OpenSSL
@@ -25,59 +20,33 @@ namespace Fannst
         // Global sending variables
         // ----
 
-        std::string messageBody;
         std::vector<Fannst::dns::ResolverMXRecord> mxRecords;
         char *tok, *domain = nullptr, *addressCStr;
         int rc;
         char i, j;
 
         // ----
-        // Prepares the message body
-        // ----
-
-        messageBody = Fannst::Composer::compose(this->c_ComposerOptions);
-
-        // ----
         // Starts the sendMessage loop
         // ----
 
-        for (Fannst::Types::EmailAddress &address : this->c_ComposerOptions.o_To)
+        for (const Types::EmailAddress &address : this->c_To)
         {
             // ----
             // Creates the logger if debug
             // ----
 
-            DEBUG_ONLY(FSMTPServer::Logger::Console print(FSMTPServer::Logger::Level::LOGGER_DEBUG, "Mailer"))
+            DEBUG_ONLY(FSMTPServer::Logger::Console print(FSMTPServer::Logger::Level::LOGGER_DEBUG, "SMTPMailer"))
 
             // ----
             // Resolves the records
             // ----
+            char *username = nullptr;
+            char *domain = nullptr;
 
             // Splits the email address
-            addressCStr = reinterpret_cast<char *>(alloca(sizeof(char) * address.e_Address.length()));
-            strcpy(&addressCStr[0], &address.e_Address.c_str()[0]);
-            tok = strtok(addressCStr, "@");
-            i = 0;
-            for (;;)
+            if (MIMEParser::splitAddress(&address.e_Address[0], &username, &domain) < 0)
             {
-                if (i == 0);
-                else if (i == 1)
-                {
-                    // Allocates the memory
-                    domain = reinterpret_cast<char *>(alloca(sizeof(char) * strlen(tok) + 1));
-                    // Copies the memory
-                    memcpy(domain, tok, strlen(tok) + 1);
-                } else break;
-                tok = strtok(nullptr, "@");
-                // Increments i
-                i++;
-            }
-
-            // Checks if it is there
-            if (domain == nullptr)
-            {
-                // TODO: Handle error log
-                continue;
+                // TODO: Handle parser error
             }
 
             // Resolves the records
@@ -125,8 +94,8 @@ namespace Fannst
                 if (j == 0)
                 {
                     // Transmits the message, using StartTLS
-                    rc = transmitMessage(ipAddress, this->c_ComposerOptions.o_From.at(0), address,
-                            messageBody, true, extIp);
+                    rc = transmitMessage(ipAddress, this->c_From.at(0), address,
+                            this->c_Message, true, extIp);
 
                     // Checks if the message was sent successfully
                     if (rc == 0) break;
@@ -138,8 +107,8 @@ namespace Fannst
                     } else break;
                 } else if (j >= 1)
                 {
-                    rc = transmitMessage(ipAddress, this->c_ComposerOptions.o_From.at(0), address,
-                            messageBody, false, extIp);
+                    rc = transmitMessage(ipAddress, this->c_From.at(0), address,
+                            this->c_Message, false, extIp);
 
                     // Checks if the message was sent successfully
                     if (rc == 0) break;
@@ -147,37 +116,21 @@ namespace Fannst
                     break;
                 }
             }
+
+            // ----
+            // Free the memory
+            // ----
+
+            free(username);
+            free(domain);
         }
 
         return 0;
     }
 
-    int transmitMessage(char *ipAddress, Fannst::Types::EmailAddress &mailFrom,
-            Fannst::Types::EmailAddress &mailTo, std::string &messageBody, bool usingSSL, const char *extIp)
+    int transmitMessage(char *ipAddress, const Types::EmailAddress &mailFrom,
+            const Types::EmailAddress &mailTo, const char *messageBody, bool usingSSL, const char *extIp)
     {
-        // Gets the time
-        std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
-        long a = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
-
-        // Performs dkim
-        Fannst::FSMTPServer::DKIM::DKIMHeaderConfig config{};
-        config.d_Domain = "fannst.nl";
-        config.d_ExpireDate = a + 600;
-        config.d_SignDate = a;
-        config.d_KeyS = "default";
-        config.d_PKey = "../keys/dkim/private-key.pem";
-
-        char *sigRet = nullptr;
-        Fannst::FSMTPServer::DKIM::sign(messageBody.c_str(), &sigRet, &config);
-
-
-        std::cout << std::endl << std::endl << std::endl << "----------" << std::endl;
-
-        std::cout << &sigRet[0] << std::endl;
-
-        std::cout << "----------" << std::endl;
-//        std::exit(-1);
-
         // ----
         // Creates the logger if enabled
         // ----
@@ -260,7 +213,7 @@ namespace Fannst
             memset(&arguments[0], 0, sizeof(arguments));
 
             // Receives data, if socket closed: break
-            if (Fannst::FSMTPClient::SocketHandler::read(&sock_fd, ssl, buffer, 512) < 0)
+            if (SocketHandler::read(&sock_fd, ssl, buffer, 512) < 0)
             {
                 break;
             }
@@ -327,7 +280,7 @@ namespace Fannst
             {
                 case MailerState::MST_START_TLS:
                 {
-                    if (!Fannst::FSMTPClient::SocketHandler::handleStartTlsCommand(&sock_fd, ssl))
+                    if (!SocketHandler::handleStartTlsCommand(&sock_fd, ssl))
                         goto end;
 
                     break;
@@ -397,7 +350,7 @@ namespace Fannst
                     state = MailerState::MST_HELO;
 
                     // Sends the message
-                    if (!Fannst::FSMTPClient::SocketHandler::handleHelo(&sock_fd, ssl, extIp))
+                    if (!SocketHandler::handleHelo(&sock_fd, ssl, extIp))
                         goto end;
 
                     break;
@@ -405,7 +358,7 @@ namespace Fannst
 
                 case MailerState::MST_HELO:
                 {
-                    if (!Fannst::FSMTPClient::SocketHandler::handleHelo(&sock_fd, ssl, extIp))
+                    if (!SocketHandler::handleHelo(&sock_fd, ssl, extIp))
                         goto end;
 
                     if (usingSSL) {
@@ -417,7 +370,7 @@ namespace Fannst
 
                 case MailerState::MST_MAIL_FROM:
                 {
-                    if (!Fannst::FSMTPClient::SocketHandler::handleMailFrom(&sock_fd, ssl, mailFrom))
+                    if (!SocketHandler::handleMailFrom(&sock_fd, ssl, mailFrom))
                         goto end;
 
                     break;
@@ -425,7 +378,7 @@ namespace Fannst
 
                 case MailerState::MST_MAIL_TO:
                 {
-                    if (!Fannst::FSMTPClient::SocketHandler::handleMailTo(&sock_fd, ssl, mailTo))
+                    if (!SocketHandler::handleMailTo(&sock_fd, ssl, mailTo))
                         goto end;
 
                     break;
@@ -433,7 +386,7 @@ namespace Fannst
 
                 case MailerState::MST_DATA:
                 {
-                    if (!Fannst::FSMTPClient::SocketHandler::handleDataCommand(&sock_fd, ssl))
+                    if (!SocketHandler::handleDataCommand(&sock_fd, ssl))
                         goto end;
 
                     break;
@@ -441,7 +394,8 @@ namespace Fannst
 
                 case MailerState::MST_DATA_START:
                 {
-                    if (!Fannst::FSMTPClient::SocketHandler::handleDataTransmission(&sock_fd, ssl, sigRet, strlen(&sigRet[0])))
+                    if (!SocketHandler::handleDataTransmission(&sock_fd, ssl, messageBody,
+                            strlen(&messageBody[0])))
                         goto end;
 
                     break;
@@ -449,7 +403,7 @@ namespace Fannst
 
                 case MailerState::MST_DATA_END:
                 {
-                    if (!Fannst::FSMTPClient::SocketHandler::handleQuit(&sock_fd, ssl))
+                    if (!SocketHandler::handleQuit(&sock_fd, ssl))
                         goto end;
 
                     break;
@@ -463,9 +417,6 @@ namespace Fannst
 
     end:
         shutdown(sock_fd, SHUT_RDWR);
-
-        // Clears signature
-        free(sigRet);
 
         // Clears the SSL stuff
         if (ssl != nullptr)

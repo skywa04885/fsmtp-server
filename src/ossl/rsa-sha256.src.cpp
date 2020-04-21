@@ -99,19 +99,24 @@ namespace Fannst::FSMTPServer::OpenSSL {
         BIO_write(bio, msgRet, msgLen);
         BIO_flush(bio);
         BIO_get_mem_ptr(bio, &bufMem);
-        BIO_set_close(bio, BIO_NOCLOSE);
-        BIO_free_all(bio);
 
         // ----
         // Stores the result
         // ----
+        // Allocates the memory
 
-        *hRet = (*bufMem).data;
+        *hRet = reinterpret_cast<char *>(malloc(ALLOCATE_NULL_TERMINATION((*bufMem).length)));
+        PREP_ALLOCATE_INVALID(*hRet);
+
+        // Stores the copy
+        memcpy(&(*hRet)[0], &(*bufMem).data[0], (*bufMem).length + 1);
 
         // ----
         // Frees the memory
         // ----
 
+        BIO_free_all(bio);
+        EVP_PKEY_free(evpPkey);
         free(msgRet);
     }
 }

@@ -56,19 +56,23 @@ namespace Fannst::FSMTPServer::OpenSSL {
         BIO_write(bio, digest, SHA256_DIGEST_LENGTH);
         BIO_flush(bio);
         BIO_get_mem_ptr(bio, &bufMem);
-        BIO_set_close(bio, BIO_NOCLOSE);
-        BIO_free_all(bio);
 
         // ----
         // Stores the result
         // ----
 
-        *hRet = (*bufMem).data;
+        // Allocates the memory
+        *hRet = reinterpret_cast<char *>(malloc(ALLOCATE_NULL_TERMINATION((*bufMem).length)));
+        PREP_ALLOCATE_INVALID(*hRet);
+
+        // Stores the copy
+        memcpy(&(*hRet)[0], &(*bufMem).data[0], (*bufMem).length + 1);
 
         // ----
         // Frees the memory
         // ----
 
+        BIO_free_all(bio);
         free(digest);
     }
 }

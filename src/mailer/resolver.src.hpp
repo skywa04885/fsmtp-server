@@ -32,6 +32,8 @@ namespace Fannst::dns
         ResolverMXRecord(const char *r_Exchange, const char *r_Name, const int &r_Type, const int &r_TTL,
                          const int &r_Class, const int &r_RdLen);
 
+        ~ResolverMXRecord();
+
         /**
          * Clears the current record memory
          */

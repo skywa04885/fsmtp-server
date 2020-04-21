@@ -1,6 +1,6 @@
 #include "socket-handler.hpp"
 
-namespace Fannst::FSMTPClient::SocketHandler
+namespace Fannst::FSMTPServer::Mailer::SocketHandler
 {
     // ----
     // The writing methods
@@ -49,16 +49,16 @@ namespace Fannst::FSMTPClient::SocketHandler
      * @param options
      * @return
      */
-    bool handleMailTo(const int *soc, SSL *ssl, Fannst::Types::EmailAddress &target)
+    bool handleMailTo(const int *soc, SSL *ssl, const Types::EmailAddress &target)
     {
         // ----
         // Generates the address
         // ----
-        const char *addrRaw = target.e_Address.c_str();
-        char *addrResult = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(strlen(&addrRaw[0] + 2), 0)));
+
+        char *addrResult = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(strlen(&target.e_Address[0] + 2), 0)));
         addrResult[0] = '\0';
         strcat(&addrResult[0], "<");
-        strcat(&addrResult[0], &addrRaw[0]);
+        strcat(&addrResult[0], &target.e_Address[0]);
         strcat(&addrResult[0], ">");
 
         // ----
@@ -86,15 +86,14 @@ namespace Fannst::FSMTPClient::SocketHandler
      * @param options
      * @return
      */
-    bool handleMailFrom(const int *soc, SSL *ssl, Fannst::Types::EmailAddress &target) {
+    bool handleMailFrom(const int *soc, SSL *ssl, const Types::EmailAddress &target) {
         // ----
         // Generates the address
         // ----
-        const char *addrRaw = target.e_Address.c_str();
-        char *addrResult = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(strlen(&addrRaw[0] + 2), 0)));
+        char *addrResult = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(strlen(&target.e_Address[0] + 2), 0)));
         addrResult[0] = '\0';
         strcat(&addrResult[0], "<");
-        strcat(&addrResult[0], &addrRaw[0]);
+        strcat(&addrResult[0], &target.e_Address[0]);
         strcat(&addrResult[0], ">");
 
         // ----

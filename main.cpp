@@ -14,6 +14,7 @@
 #include "src/sender/sender.src.hpp"
 #include "src/logger.src.hpp"
 
+#include "src/mailer/mailer.src.hpp"
 #include "src/mailer/mime-composer/mime-composer.src.hpp"
 
 using namespace Fannst::FSMTPServer;
@@ -23,8 +24,8 @@ int main(int argc, char **argv) {
     Timer t("Composer");
 
     Mailer::Composer::MailerComposerOptions opts{};
-    opts.o_PlainText = "Hello World";
-    opts.o_HTML = "<h1>Hello World</h1>";
+    opts.o_PlainText = "Hello World\r\nKaas";
+    opts.o_HTML = "<h1>Hello World</h1><p>Kaas</p>";
     opts.o_UseExistingSections = false;
     opts.o_To.emplace_back(Types::EmailAddress{"Test", "luke.rieff@gmail.com"});
     opts.o_From.emplace_back(Types::EmailAddress{"Webmaster", "webmaster@fannst.nl"});
@@ -42,6 +43,9 @@ int main(int argc, char **argv) {
     std::cout << "Message length:" << messageLen << std::endl;
     std::cout << "------" << std::endl;
     std::cout << message << std::endl;
+
+    Mailer::SMTPMailer m(message, opts.o_To, opts.o_From);
+    m.sendMessage("93.104.211.125");
 
     free(message);
 

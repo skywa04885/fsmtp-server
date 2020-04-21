@@ -9,12 +9,12 @@
 #include <arpa/inet.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-#include <fannst_libcompose.hpp>
 
 #include "../pre.hpp"
+#include "../types/mime.src.hpp"
 #include "commands.src.hpp"
 
-namespace Fannst::FSMTPClient::SocketHandler
+namespace Fannst::FSMTPServer::Mailer::SocketHandler
 {
     // ----
     // The functions which will send or receive data
@@ -112,17 +112,7 @@ namespace Fannst::FSMTPClient::SocketHandler
      * @param options
      * @return
      */
-    bool handleMailTo(const int *soc, SSL *ssl, Fannst::Composer::Options &options);
-
-
-    /**
-     * Handles mail to
-     * @param soc
-     * @param ssl
-     * @param options
-     * @return
-     */
-    bool handleMailTo(const int *soc, SSL *ssl, Fannst::Types::EmailAddress &target);
+    bool handleMailTo(const int *soc, SSL *ssl, const Types::EmailAddress &target);
 
     /**
      * Handles mail from
@@ -131,7 +121,7 @@ namespace Fannst::FSMTPClient::SocketHandler
      * @param options
      * @return
      */
-    bool handleMailFrom(const int *soc, SSL *ssl, Fannst::Types::EmailAddress &target);
+    bool handleMailFrom(const int *soc, SSL *ssl, const Types::EmailAddress &target);
 
     /**
      * Sends data command
