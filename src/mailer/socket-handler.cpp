@@ -55,7 +55,8 @@ namespace Fannst::FSMTPServer::Mailer::SocketHandler
         // Generates the address
         // ----
 
-        char *addrResult = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(strlen(&target.e_Address[0] + 2), 0)));
+        char *addrResult = reinterpret_cast<char *>(malloc(
+                ALLOCATE_NULL_TERMINATION(strlen(&target.e_Address[0]) + 2)));
         addrResult[0] = '\0';
         strcat(&addrResult[0], "<");
         strcat(&addrResult[0], &target.e_Address[0]);
@@ -90,7 +91,7 @@ namespace Fannst::FSMTPServer::Mailer::SocketHandler
         // ----
         // Generates the address
         // ----
-        char *addrResult = reinterpret_cast<char *>(malloc(ALLOC_CAS_STRING(strlen(&target.e_Address[0] + 2), 0)));
+        char *addrResult = reinterpret_cast<char *>(malloc(ALLOCATE_NULL_TERMINATION(strlen(&target.e_Address[0]) + 2)));
         addrResult[0] = '\0';
         strcat(&addrResult[0], "<");
         strcat(&addrResult[0], &target.e_Address[0]);

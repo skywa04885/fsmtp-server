@@ -20,36 +20,35 @@
 using namespace Fannst::FSMTPServer;
 
 int main(int argc, char **argv) {
-
-    Timer t("Composer");
-
-    Mailer::Composer::MailerComposerOptions opts{};
-    opts.o_PlainText = "Hello World\r\nKaas";
-    opts.o_HTML = "<h1>Hello World</h1><p>Kaas</p>";
-    opts.o_UseExistingSections = false;
-    opts.o_To.emplace_back(Types::EmailAddress{"Test", "luke.rieff@gmail.com"});
-    opts.o_From.emplace_back(Types::EmailAddress{"Webmaster", "webmaster@fannst.nl"});
-    opts.o_Subject = "Hello World";
-    opts.o_Domain = GE_DOMAIN;
-    opts.o_DKIM.o_Domain = GE_DOMAIN;
-    opts.o_DKIM.o_EnableDKIM = true;
-    opts.o_DKIM.o_KeySelector = "default";
-    opts.o_DKIM.o_PrivateKeyFile = "../keys/dkim/private-key.pem";
-
-    char *message = nullptr;
-    std::size_t messageLen;
-    Mailer::Composer::sexyComposingAlgorithm(opts, &message, &messageLen);
-
-    std::cout << "Message length:" << messageLen << std::endl;
-    std::cout << "------" << std::endl;
-    std::cout << message << std::endl;
-
-    Mailer::SMTPMailer m(message, opts.o_To, opts.o_From);
-    m.sendMessage("93.104.211.125");
-
-    free(message);
-
-    return 0;
+//    Timer t("Composer");
+//
+//    Mailer::Composer::MailerComposerOptions opts{};
+//    opts.o_PlainText = "Hello World\r\nKaas";
+//    opts.o_HTML = "test";
+//    opts.o_UseExistingSections = false;
+//    opts.o_To.emplace_back(Types::EmailAddress{"Sess", "luke.rieff@gmail.com"});
+//    opts.o_From.emplace_back(Types::EmailAddress{"Webmaster", "webmaster@fannst.nl"});
+//    opts.o_Subject = "Hello World";
+//    opts.o_Domain = GE_DOMAIN;
+//    opts.o_DKIM.o_Domain = GE_DOMAIN;
+//    opts.o_DKIM.o_EnableDKIM = true;
+//    opts.o_DKIM.o_KeySelector = "default";
+//    opts.o_DKIM.o_PrivateKeyFile = "../keys/dkim/private-key.pem";
+//
+//    char *message = nullptr;
+//    std::size_t messageLen;
+//    Mailer::Composer::sexyComposingAlgorithm(opts, &message, &messageLen);
+//
+//    std::cout << "Message length:" << messageLen << std::endl;
+//    std::cout << "------" << std::endl;
+//    std::cout << message << std::endl;
+//
+//    Mailer::SMTPMailer m(message, opts.o_To, opts.o_From);
+//    m.sendMessage("93.104.211.125");
+//
+//    free(message);
+//
+//    return 0;
 
     // Initializes the default values
     bool enableWebApi, enableSMTPServer, enableSender;
@@ -184,7 +183,7 @@ int main(int argc, char **argv) {
         print << "FSMTP starting ..." << Fannst::FSMTPServer::Logger::ConsoleOptions::ENDL;
 
         // Creates the server
-        Fannst::FSMTPServer::Server::run(1224, &argc, &argv);
+        Fannst::FSMTPServer::Server::run(25, &argc, &argv);
     }
 
     // ----

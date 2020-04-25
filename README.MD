@@ -58,6 +58,42 @@ R: 221 Goodbye ! - fsmtp
 --- Server terminates connection ---
 ```
 
+## Example generated MIME Message, by FSMTP
+
+```
+MIME-Version: 1.0
+X-Author: Luke A.C.A. Rieff
+Subject: Hello World
+Return-Path: <webmaster@fannst.nl>
+Message-ID: <yqjw8yx8-nuzi-g01o-pdawqw5jwsql@fannst.nl>
+Content-Type: multipart/alternative; boundary="--_CujdngdVAfkhJkZgyyd0tGPFx1C"
+Date: Tue, 21 Apr 2020 09:32:34 +0200
+From: Webmaster <webmaster@fannst.nl>
+To: Test <luke.rieff@gmail.com>
+DKIM-Signature: d=fannst.nl; s=default; t=1587454355; x=1587460355; c=relaxed/relaxed; 
+    q=dns/txt; v=1; a=rsa-sha256; h=mime-version:subject:message-id:date:from:to; 
+    bh=hjcJt7MMn2BmW1t5n4zsq+OXU8iXDGbAcM3rzZaDveY=; 
+    b=Ce1gEZrFXaLzxRdWxFfKItZH3J42xn/GWXe4gb3oAcenWXEDCBFcyEdiZVchg2mV9
+     Gra7+3rkv5DDE4IIhzoCiV9p6M5ts5bp4nX19uEYVym6Cej6FEuuxZ7vfN9RyTLtsvL
+     Fk9DrlUuhFZjHQCVDVW94BhmldsWQWC2Joga7e3HXJ2ujuzJ6Us+FPLhOJG7ueAdup5
+     dvnGZxJUu8MxG5n+UYb5B12puXWiDesSTqjsOSscL5F8FBsvDWPXIT9axxIwyO+MFfy
+     su21yHu1soDi3X1lV+gatYqdvLdUa8ifG+lUJZTihIZJnDe8obuIwvAz2O0QeZGmodB
+     yXSNxKzPA==
+
+----_CujdngdVAfkhJkZgyyd0tGPFx1C
+Content-Type: text/html
+Content-Transfer-Encoding: quoted-printable
+
+<h1>Hello World</h1><p>Kaas</p>
+----_CujdngdVAfkhJkZgyyd0tGPFx1C
+Content-Type: text/plain
+Content-Transfer-Encoding: 8bit
+
+Hello World
+Kaas
+----_CujdngdVAfkhJkZgyyd0tGPFx1C--
+```
+
 ## Tested with, and worked
 
 * Outlook

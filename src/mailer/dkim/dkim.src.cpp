@@ -134,6 +134,16 @@ namespace Fannst::FSMTPServer::DKIM {
             tok = strtok(nullptr, "\r\n");
         }
 
+        // ----
+        // Frees the memory
+        // ----
+
+        free(rawC);
+
+        // ----
+        // Finishes
+        // ----
+
         // Removes the ':' at the end
         (*ret)[retSize-2] = '\0';
     }
