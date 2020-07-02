@@ -1,5 +1,8 @@
 ![Fannst Banner](static/fannst-banner.png)
 
+# ABANDONDED !!!
+New project: https://github.com/skywa04885/fsmtp-v2
+
 # FSMTP Server
 
 Open source C++ SMTP Server, developed by [Fannst Software](https://software.fannst.nl)
